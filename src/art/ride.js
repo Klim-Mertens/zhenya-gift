@@ -5,7 +5,43 @@ window.RideArt = (() => {
   const W = 320, H = 180, WX = 34, WY = 18, WW = 252, WH = 104;   // окно
   const R = PK.R, P = PK.P, OL = RK.OL;
   // Пейзаж одного сезона на холсте окна; off — сдвиг от скорости поезда
+  const wrap = (v, m) => ((v % m) + m) % m;
+  // Италия: море с парусниками, холмы с городком и колокольней, кипарисы, виноградники, пинии, подсолнухи
+  function italy(g, off, s) {
+    const w = WW, h = WH;
+    PK.gradV(g, 0, 0, w, 50, ["#3a8ad8", "#6ab4ea", "#bfe2f4", "#fff0d0"]);
+    PK.ell(g, 206, 16, 10, 10, "#fff6c0"); PK.ell(g, 206, 16, 7, 7, "#ffffff");
+    for (let i = 0; i < 3; i++) { const x = wrap(i * 110 - off * .03 - s * 2, w + 60) - 30, y = 10 + i * 7; PK.ell(g, x, y, 14, 3, "#ffffff"); PK.ell(g, x + 6, y - 2, 8, 3, "#ffffff"); }
+    // море
+    R(g, 0, 44, w, 12, "#2f7ec4"); R(g, 0, 44, w, 1, "#9ad4f4");
+    for (let x = 0; x < w; x += 7) P(g, wrap(x + Math.floor(s * 4) - off * .05, w), 47 + (x % 3) * 2, "#8cc8ee");
+    for (let i = 0; i < 2; i++) { const x = wrap(60 + i * 150 - off * .06 + s * 1.5, w + 20) - 10; PK.poly(g, [[x, 50], [x, 42], [x + 5, 50]], "#ffffff"); R(g, x - 3, 50, 9, 2, "#c8402a"); }
+    // дальние холмы с городком на вершине
+    const hy = X => 54 - Math.round(Math.sin(X * .02) * 8 + Math.sin(X * .007) * 5);
+    for (let x = 0; x < w; x++) { const X = x + off * .22, y = hy(X); R(g, x, y, 1, h - y, "#8aa860"); if ((X | 0) % 9 === 0) P(g, x, y + 2, "#a8c070"); }
+    for (let k = -1; k < 3; k++) { const base = Math.floor(off * .22 / 300) * 300 + k * 300 + 150, x0 = Math.round(base - off * .22); if (x0 < -40 || x0 > w + 40) continue;
+      const top = hy(base);
+      for (let i = 0; i < 7; i++) { const hx = x0 - 18 + i * 6, hh = 6 + ((i * 5) % 4), y = top - hh + 2 + Math.abs(i - 3);
+        R(g, hx, y, 6, hh, ["#f2dcb0", "#e8c890", "#f4e8d0", "#e0b880"][i % 4]); R(g, hx - 1, y - 2, 8, 2, "#c8582a"); P(g, hx + 2, y + 3, "#6a4a3a"); }
+      R(g, x0 + 4, top - 22, 5, 20, "#e8c890"); R(g, x0 + 3, top - 25, 7, 3, "#c8582a"); PK.poly(g, [[x0 + 3, top - 25], [x0 + 6, top - 31], [x0 + 10, top - 25]], "#c8582a"); R(g, x0 + 5, top - 19, 3, 3, "#6a4a3a");   // колокольня
+      for (let c = 0; c < 4; c++) { const cx = x0 + 22 + c * 4; for (let j = 0; j < 12; j++) R(g, cx - (j > 2 && j < 10 ? 1 : 0), top - j + 2, j > 2 && j < 10 ? 3 : 1, 1, "#2c4c26"); } }
+    // виноградники: ровные ряды
+    R(g, 0, 64, w, 18, "#9ab850");
+    for (let r = 0; r < 4; r++) { const y = 66 + r * 4; for (let x = 0; x < w; x++) { const X = x + off * (.45 + r * .08); if (X % 8 < 6) P(g, x, y, "#4f7a2a"); if (X % 8 < 5 && (X | 0) % 3) P(g, x, y - 1, "#6a9a3a"); if ((X | 0) % 16 === 3) P(g, x, y + 1, "#6a2a5a"); } }
+    // пинии-«зонтики» и одинокие кипарисы среднего плана
+    for (let i = -1; i < 7; i++) { const X = wrap(i * 52 - off * .7, w + 60) - 30, base = 82;
+      if (i % 3 === 0) { for (let k = 0; k < 28; k++) { const ww = Math.round(Math.sin(Math.min(1, k / 26) * Math.PI * .9) * 3 + 1); R(g, X - ww, base - k, ww * 2, 1, k % 3 ? "#24442a" : "#36603a"); } }
+      else { R(g, X, base - 16, 2, 16, "#6a4a32"); PK.line(g, X + 1, base - 12, X + 6, base - 18, "#6a4a32"); PK.ell(g, X + 2, base - 20, 13, 4, "#2f5a2e"); PK.ell(g, X + 1, base - 22, 10, 3, "#4a7a3a"); PK.ell(g, X - 3, base - 23, 4, 1, "#6a9a4a"); } }
+    // подсолнухи у самой дороги
+    R(g, 0, 82, w, h - 82, "#7aa83a");
+    for (let i = 0; i < 40; i++) { const X = wrap(i * 13 - off * 1.4, w + 20) - 10, y = 88 + (i * 7) % 12;
+      R(g, X, y, 1, h - y, "#4a7a2a"); P(g, X + 1, y + 4, "#5a9a3a"); PK.ell(g, X, y - 1, 3, 3, "#f2c21a"); PK.ell(g, X, y - 1, 1, 1, "#6a3a1a"); }
+    // столбы
+    for (let i = 0; i < 3; i++) { const X = wrap(i * 110 - off * 2.4, w + 60) - 30; R(g, X, 4, 3, h, "#3a2a24"); R(g, X - 8, 10, 19, 2, "#3a2a24"); }
+    PK.line(g, 0, 11, w, 13, "#2a2a30");
+  }
   function scenery(g, season, off, s) {
+    if (season !== "winter") return italy(g, off, s);
     const w = WW, h = WH, win = season === "winter";
     PK.gradV(g, 0, 0, w, 60, win ? ["#5a6a8a", "#8a9ab8", "#b8c4d8"] : ["#2f88d4", "#58a8e2", "#a8d8f0"]);
     if (!win) { PK.ell(g, 200, 18, 9, 9, "#fff6c0"); PK.ell(g, 200, 18, 7, 7, "#ffffff"); }

@@ -28,25 +28,52 @@ window.Sound = (() => {
     const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = buf; f.type = "highpass"; f.frequency.value = hp; g.gain.value = vol;
     s.connect(f); f.connect(g); g.connect(bus); s.start(t);
   }
+  // Гул стадиона: шум через полосовой фильтр с плавным нарастанием + «голоса» толпы
+  function crowd(t, dur, vol = .3) {
+    if (!ctx) return;
+    const len = Math.floor(ctx.sampleRate * dur), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    let b = 0; for (let i = 0; i < len; i++) { b = b * .6 + (Math.random() * 2 - 1) * .4; d[i] = b; }
+    const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = buf; f.type = "bandpass"; f.frequency.value = 700; f.Q.value = .6;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + dur * .25); g.gain.setValueAtTime(vol, t + dur * .7); g.gain.linearRampToValueAtTime(0, t + dur);
+    s.connect(f); f.connect(g); g.connect(sfxBus); s.start(t);
+    for (let k = 0; k < 14; k++) { const f0 = 220 + Math.random() * 260, st = t + Math.random() * dur * .3; tone(f0, st, dur * .6, { type: "sawtooth", vol: .012, vib: 6 + Math.random() * 10, attack: .4, release: .6 }); }
+  }
+  // Хлопок
+  function clap(t, vol = .25) { for (let k = 0; k < 3; k++) noise(t + k * .012, .05, { vol: vol * (1 - k * .25), hp: 1400 }); }
   // ---------- музыка ----------
   // Мелодии: [нота, длительность в долях]. Свои мотивы, написаны для игры.
+  // Бас «умпа»: аккорд на 4 доли → корень, квинта, корень, квинта
+  const ROOTS = { C: ["C3", "G2"], F: ["F2", "C3"], G: ["G2", "D3"], D: ["D3", "A2"], A: ["A2", "E3"], Am: ["A2", "E3"], Dm: ["D3", "A2"], E: ["E2", "B2"], Em: ["E2", "B2"] };
+  const oompa = (chords, per = 4) => chords.flatMap(c => Array.from({ length: per }, (_, i) => [ROOTS[c][i % 2], 1]));
+  // «Jingle Bells» (Джеймс Пьерпонт, 1857, общественное достояние), переложение для чиптюна
+  const JB_VERSE = [["G4", 1], ["E5", 1], ["D5", 1], ["C5", 1], ["G4", 3], ["G4", .5], ["G4", .5], ["G4", 1], ["E5", 1], ["D5", 1], ["C5", 1], ["A4", 4],
+    ["A4", 1], ["F5", 1], ["E5", 1], ["D5", 1], ["B4", 4], ["G5", 1], ["G5", 1], ["F5", 1], ["D5", 1], ["E5", 4]];
+  const JB_CHORUS = [["E5", 1], ["E5", 1], ["E5", 2], ["E5", 1], ["E5", 1], ["E5", 2], ["E5", 1], ["G5", 1], ["C5", 1.5], ["D5", .5], ["E5", 4],
+    ["F5", 1], ["F5", 1], ["F5", 1.5], ["F5", .5], ["F5", 1], ["E5", 1], ["E5", 1], ["E5", .5], ["E5", .5], ["E5", 1], ["D5", 1], ["D5", 1], ["E5", 1], ["D5", 2], ["G5", 2],
+    ["E5", 1], ["E5", 1], ["E5", 2], ["E5", 1], ["E5", 1], ["E5", 2], ["E5", 1], ["G5", 1], ["C5", 1.5], ["D5", .5], ["E5", 4],
+    ["F5", 1], ["F5", 1], ["F5", 1.5], ["F5", .5], ["F5", 1], ["E5", 1], ["E5", 1], ["E5", .5], ["E5", .5], ["G5", 1], ["G5", 1], ["F5", 1], ["D5", 1], ["C5", 4]];
   const TRACKS = {
-    winter: { bpm: 92, lead: "triangle", bell: true,
-      mel: [["E5", 1], ["A4", 1], ["C5", 1], ["E5", 1], ["D5", 2], ["C5", 1], ["B4", 1], ["C5", 1], ["A4", 1], ["E4", 1], ["A4", 1], ["B4", 3], ["-", 1],
-            ["E5", 1], ["A4", 1], ["C5", 1], ["E5", 1], ["G5", 2], ["F5", 1], ["E5", 1], ["D5", 1], ["C5", 1], ["B4", 1], ["G4", 1], ["A4", 3], ["-", 1]],
-      bass: [["A2", 4], ["F2", 4], ["C3", 4], ["E2", 4], ["A2", 4], ["F2", 4], ["G2", 4], ["E2", 2], ["A2", 2]] },
-    pack: { bpm: 120, lead: "square", bell: false,
+    // титул и квартира: весёлые «Бубенцы» с барабанами и бубенчиками
+    winter: { bpm: 138, lead: "square", bell: true, drums: true, sleigh: true,
+      mel: JB_VERSE.concat(JB_CHORUS),
+      bass: oompa(["C", "C", "F", "G", "G", "G", "C", "C"]).concat(oompa(["C", "C", "C", "C", "F", "C", "D", "G", "C", "C", "C", "C", "F", "C", "G", "C"])) },
+    // сборы: бодрая полька (своя мелодия)
+    pack: { bpm: 150, lead: "square", bell: false, drums: true,
       mel: [["C5", .5], ["E5", .5], ["G5", .5], ["E5", .5], ["F5", .5], ["A5", .5], ["G5", 1], ["E5", .5], ["C5", .5], ["D5", .5], ["E5", .5], ["C5", 2],
             ["A4", .5], ["C5", .5], ["E5", .5], ["C5", .5], ["D5", .5], ["F5", .5], ["E5", 1], ["D5", .5], ["B4", .5], ["G4", .5], ["B4", .5], ["C5", 2]],
-      bass: [["C3", 2], ["F2", 2], ["G2", 2], ["C3", 2], ["A2", 2], ["D3", 2], ["G2", 2], ["C3", 2]] },
-    train: { bpm: 100, lead: "triangle", bell: true, clack: true,
-      mel: [["A4", 2], ["C5", 1], ["E5", 1], ["D5", 2], ["B4", 2], ["C5", 2], ["A4", 1], ["G4", 1], ["A4", 4],
-            ["F4", 2], ["A4", 1], ["C5", 1], ["B4", 2], ["G4", 2], ["A4", 6], ["-", 2]],
-      bass: [["A2", 4], ["G2", 4], ["F2", 4], ["E2", 4], ["F2", 4], ["G2", 4], ["A2", 8]] },
-    summer: { bpm: 112, lead: "square", bell: true,
+      bass: oompa(["C", "F", "G", "C", "Am", "Dm", "G", "C"], 2) },
+    // вокзал: та же новогодняя тема, но с другим тембром, как музыкальная шкатулка с барабаном
+    station: { bpm: 126, lead: "triangle", bell: true, drums: true, sleigh: true,
+      mel: JB_CHORUS,
+      bass: oompa(["C", "C", "C", "C", "F", "C", "D", "G", "C", "C", "C", "C", "F", "C", "G", "C"]) },
+    train: { bpm: 108, lead: "triangle", bell: true, clack: true,
+      mel: [["C5", 1], ["E5", 1], ["G5", 1], ["E5", 1], ["F5", 2], ["D5", 2], ["E5", 1], ["C5", 1], ["D5", 1], ["B4", 1], ["C5", 4],
+            ["A4", 1], ["C5", 1], ["F5", 1], ["E5", 1], ["D5", 2], ["G4", 2], ["C5", 6], ["-", 2]],
+      bass: oompa(["C", "F", "C", "G", "F", "G", "C", "C"]) },
+    summer: { bpm: 126, lead: "square", bell: true, drums: true,
       mel: [["G4", .5], ["C5", .5], ["E5", 1], ["D5", .5], ["C5", .5], ["A4", 1], ["G4", .5], ["A4", .5], ["C5", 1], ["D5", 2],
             ["E5", .5], ["G5", .5], ["E5", 1], ["D5", .5], ["C5", .5], ["D5", 1], ["E5", .5], ["D5", .5], ["C5", 1], ["C5", 2]],
-      bass: [["C3", 2], ["A2", 2], ["F2", 2], ["G2", 2], ["C3", 2], ["E2", 2], ["F2", 1], ["G2", 1], ["C3", 2]] }
+      bass: oompa(["C", "F", "G", "C", "Am", "F", "G", "C"], 2) }
   };
   function play(name, force) {
     if (track && track.name === name && !force) return;
@@ -61,8 +88,13 @@ window.Sound = (() => {
       const horizon = (ctx.currentTime - start) / beat + 1.5;
       while (until < horizon) {
         const a = until, b = until + 1;
-        at(mel, a, b, (tt, n, d) => { const f = NOTE(n); tone(f, tt, d * beat * .9, { type: T.lead, vol: .11, bus: musicBus, release: .12 }); if (T.bell && f) tone(f * 2, tt, .25, { type: "sine", vol: .05, bus: musicBus, release: .35 }); });
+        at(mel, a, b, (tt, n, d) => { const f = NOTE(n); tone(f, tt, d * beat * .9, { type: T.lead, vol: T.lead === "square" ? .08 : .12, bus: musicBus, release: .12 }); if (T.bell && f) tone(f * 2, tt, .25, { type: "sine", vol: .05, bus: musicBus, release: .35 }); });
         at(bas, a, b, (tt, n, d) => tone(NOTE(n), tt, d * beat * .85, { type: "triangle", vol: .14, bus: musicBus, release: .1 }));
+        if (T.drums) {                                            // бочка на сильные доли, хэт на слабые
+          const kick = start + a * beat; if (a % 2 === 0) tone(90, kick, .12, { type: "sine", vol: .3, bus: musicBus, slide: .4 }); else noise(kick, .08, { vol: .12, bus: musicBus, hp: 1500 });
+          noise(start + (a + .5) * beat, .03, { vol: .05, bus: musicBus, hp: 6000 });
+        }
+        if (T.sleigh) for (let k = 0; k < 4; k++) noise(start + (a + k * .25) * beat, .035, { vol: k % 2 ? .025 : .045, bus: musicBus, hp: 7000 });
         if (T.clack) { noise(start + a * beat, .04, { vol: .09, bus: musicBus, hp: 2000 }); noise(start + (a + .5) * beat, .04, { vol: .05, bus: musicBus, hp: 2000 }); }
         until = b;
       }
@@ -83,7 +115,20 @@ window.Sound = (() => {
     done: () => { ["C5", "E5", "G5", "C6"].forEach((n, i) => tone(NOTE(n), now() + i * .1, .14, { type: "square", vol: .12 })); },
     whistle: () => { const t = now(); tone(740, t, .9, { type: "sine", vol: .22, vib: 8, attack: .05 }); tone(587, t, .9, { type: "sine", vol: .14, vib: 8, attack: .05 }); },
     // «МО-СКОВ-СКИЙ СПАР-ТАК»: ритм стадиона, большой барабан на каждый слог
-    chant: () => { const t = now(); [0, .32, .64, 1.08, 1.4].forEach((d, i) => { tone(70, t + d, .18, { type: "sine", vol: .5, slide: .5 }); noise(t + d, .12, { vol: .18, hp: 300 }); tone([392, 392, 392, 466, 392][i], t + d, .22, { type: "sawtooth", vol: .05 }); }); }
+    chant: () => {
+      const t = now(), D = [0, .32, .64, 1.08, 1.4], NOTES = [196, 196, 196, 233, 196];
+      crowd(t - .2, 3.6, .28);
+      D.forEach((d, i) => {
+        tone(70, t + d, .18, { type: "sine", vol: .5, slide: .5 }); noise(t + d, .12, { vol: .16, hp: 300 });   // большой барабан
+        // папин голос: низкий «крик» с вибрато, слышен поверх толпы
+        tone(NOTES[i], t + d, i === 4 ? .5 : .24, { type: "sawtooth", vol: .1, vib: 5, attack: .02, slide: i === 4 ? .8 : 1 });
+        tone(NOTES[i] * 2, t + d, i === 4 ? .5 : .24, { type: "square", vol: .03, vib: 5, attack: .02 });
+        clap(t + d + .16, .18);                                                                                    // толпа хлопает в ответ
+      });
+      [2.0, 2.3, 2.6].forEach(d => clap(t + d, .22));
+    },
+    // Папа стучит ложкой по крышке кастрюли — «обряд на удачу»
+    bong: () => { const t = now(); tone(880, t, .5, { type: "triangle", vol: .16, slide: .98, release: .4 }); tone(1320, t, .3, { type: "sine", vol: .08, release: .3 }); noise(t, .04, { vol: .12, hp: 2000 }); }
   };
   function sfx(name, arg) { if (ctx && SFX[name]) SFX[name](arg); }
   function toggleMute() { muted = !muted; if (master) master.gain.value = muted ? 0 : .7; return muted; }

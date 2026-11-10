@@ -32,7 +32,10 @@ body { display: grid; place-items: center; font-family: "Tiny5", monospace; colo
 @keyframes blink { 50% { opacity: 0; } }
 
 .banner { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none; }
-.banner.chant { place-items: end center; padding-bottom: calc(12px * var(--z)); }
+.banner.chant { place-items: end center; padding-bottom: calc(10px * var(--z)); }
+.banner.chant .who { display: flex; align-items: center; justify-content: center; gap: calc(3px * var(--z)); margin-bottom: calc(2px * var(--z)); }
+.banner.chant .who canvas { width: calc(16px * var(--z)); height: calc(16px * var(--z)); image-rendering: pixelated; background: #f2e2c0; border: calc(1px * var(--z)) solid #3b2420; }
+.banner.chant .who b { font-weight: normal; font-size: calc(8px * var(--z)); color: #3b2420; background: #ff7a6a; padding: 0 calc(3px * var(--z)); border: calc(1px * var(--z)) solid #3b2420; }
 .banner.chant span { display: inline-block; font-size: calc(17px * var(--z)); color: #f4f0e8; text-shadow: calc(1px * var(--z)) calc(1px * var(--z)) 0 #d8202c, calc(2px * var(--z)) calc(2px * var(--z)) 0 #3b2420;
   animation: chant .32s steps(3) both; letter-spacing: calc(1px * var(--z)); }
 .banner.chant span:nth-child(odd) { color: #ff3a46; text-shadow: calc(1px * var(--z)) calc(1px * var(--z)) 0 #f4f0e8, calc(2px * var(--z)) calc(2px * var(--z)) 0 #3b2420; }

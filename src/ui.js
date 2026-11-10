@@ -57,5 +57,5 @@ window.UI = (() => {
     return new Promise(r => setTimeout(() => { el.hidden = true; r(); }, ms));
   }
   function hint(text) { const el = $("hint"); el.textContent = clean(text); el.hidden = !text; }
-  return { speaker, say, goal, toast, banner, card, hint, bindClick, get busy() { return busy; } };
+  return { portrait: id => speakers[id] && speakers[id].cv, speaker, say, goal, toast, banner, card, hint, bindClick, get busy() { return busy; } };
 })();

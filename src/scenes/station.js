@@ -4,7 +4,7 @@
 class StationScene extends Phaser.Scene {
   constructor() { super("station"); }
   create() {
-    Save.store("station"); Sound.play("winter"); UI.goal("");
+    Save.store("station"); Sound.play("station"); UI.goal("");
     this.cameras.main.fadeIn(600, 0, 0, 0);
     const art = StationArt.create();
     this.trainX = 20; this.zhInTrain = false;
@@ -13,7 +13,7 @@ class StationScene extends Phaser.Scene {
       art.back(g, t); g.drawImage(art.train, Math.round(this.trainX), 20);
       if (this.zhInTrain) { const wx = Math.round(this.trainX) + StationArt.DOOR_X + 2, src = this.textures.get("zh_winter_front_0").getSourceImage(); g.drawImage(src, 2, 0, 12, 12, wx, 33, 12, 12); }
     }, -1000);
-    World.backdrop(this, "st_front", (g, t) => art.front(g, t), 5000);
+    World.backdrop(this, "st_front", (g, t) => { art.front(g, t); this.festive(g, t); }, 5000);
     const doorX = this.trainX + StationArt.DOOR_X + 8;
     this.mama = World.npc(this, "ma_station_idle", "ma_station_blink", doorX - 30, 104, .5);
     this.papa = World.npc(this, "pa_station_idle", "pa_station_blink", doorX - 12, 106, 1.6);
@@ -40,18 +40,24 @@ class StationScene extends Phaser.Scene {
     R(g, 3, 6, 2, 3, "#3a8a4a"); R(g, 5, 6, 2, 3, "#c8303a"); R(g, 8, 6, 4, 1, "#f4ece0"); R(g, 8, 7, 4, 1, "#3a5ab0"); R(g, 8, 8, 4, 1, "#c8303a");
     PK.outline(cv, RK.OL); this.textures.addCanvas("suit_closed_st", cv);
   }
+  // Праздничные огоньки, обвивающие фонарные столбы
+  festive(g, t) {
+    const s = t / 1000, cols = ["#ff4a5a", "#f2d23a", "#4ab0ff", "#6ae06a"];
+    StationArt.LAMPS.forEach(([x, y], li) => { for (let k = 0; k < 9; k++) { const yy = y + 6 + k * 4, side = k % 2 ? 2 : -2, on = (k + li + Math.floor(s * 3)) % 3 !== 0, c = cols[(k + li) % 4];
+      PK.P(g, x + side, yy, on ? c : PK.mix(c, "#000", .5)); if (on) { g.globalAlpha = .3; PK.R(g, x + side - 1, yy - 1, 3, 3, c); g.globalAlpha = 1; } } });
+  }
   async farewell() {
     this.said = true; UI.goal("");
     const W = (who, text) => ({ who, text });
     await UI.say([
-      W("mamaw", "Ну вот и всё... Женечка, мы тебя очень-очень любим."),
-      W("papaw", "Очень. Будь там осторожна, ладно? Смотри по сторонам."),
-      W("mamaw", "Проверь документы. Паспорт, билет... Всё на месте?"),
-      W("zhw", "Мам, всё на месте. Даже валенки."),
-      W("mamaw", "И не забывай обедать вовремя! Борщ в чемодане, сверху."),
-      W("papaw", "Позвони, как доедешь. И если кто обидит, сразу звони мне."),
-      W("mamaw", "Тепло одевайся. И спи нормально, а не до трёх ночи."),
-      W("zhw", "Я вас тоже очень люблю. Обнимаю! Всё, бегу, а то без меня уедет.")
+      W("mamaw", "Ну вот и приехали! Женечка, я тебе в карман куртки ещё бутербродов положила."),
+      W("papaw", "Пять штук. Я видел. И два в рукав."),
+      W("zhw", "Мам! Это двое суток в поезде, а не экспедиция на Северный полюс!"),
+      W("mamaw", "Звони каждый день! Ну хотя бы через день. Ну хотя бы смайлик присылай."),
+      W("papaw", "И не забудь: в наушниках мой плейлист. Трек номер семь слушать только на полную громкость!"),
+      W("zhw", "Обещаю. Я вас очень люблю! Летом приезжайте, покажу вам море."),
+      W("mamaw", "Приедем! Папа уже итальянский учит. Скажи ей, Лёш."),
+      W("papaw", "Грацие! Чао! Пицца! ...Всё, бегом в вагон, а то без тебя уедет!")
     ]);
     UI.goal("Садись в поезд");
   }
@@ -70,16 +76,28 @@ class StationScene extends Phaser.Scene {
     this.departing = true; this.depT = 0;
     this.mama.override = "ma_station_wave";
     await World.wait(this, 1300);
+    // камера наезжает на папу: сразу видно, кто кричит
+    const cam = this.cameras.main, ps = this.papa.spr;
+    cam.pan(ps.x, ps.y - 18, 450, "Sine.easeOut"); cam.zoomTo(2, 450, "Sine.easeOut");
+    await World.wait(this, 450);
     this.papa.override = "pa_station_cheer";
     Sound.stopMusic(); Sound.sfx("chant");
-    this.cameras.main.shake(1600, .006);
+    cam.shake(1600, .004);
     const syl = ["МО-", "СКОВ-", "СКИЙ", "СПАР-", "ТАК!!!"];
-    const el = document.getElementById("banner"); el.className = "banner chant"; el.hidden = false; el.innerHTML = "<div></div>";
-    const box = el.firstChild; const delays = [0, 320, 640, 1080, 1400];
+    const el = document.getElementById("banner"); el.className = "banner chant"; el.hidden = false;
+    el.innerHTML = '<div class="who"><canvas width="16" height="16"></canvas><b>Папа</b></div><div class="syl"></div>';
+    const pc = UI.portrait("papaw"); if (pc) el.querySelector("canvas").getContext("2d").drawImage(pc, 0, 0);
+    const box = el.querySelector(".syl"); const delays = [0, 320, 640, 1080, 1400];
     syl.forEach((s, i) => this.time.delayedCall(delays[i], () => { const sp = document.createElement("span"); sp.textContent = s; box.appendChild(sp); if (i === 2) box.appendChild(document.createElement("br")); }));
     await World.wait(this, 3200);
     el.hidden = true;
-    await World.wait(this, 1200);
+    cam.pan(160, 90, 600, "Sine.easeInOut"); cam.zoomTo(1, 600, "Sine.easeInOut");
+    await World.wait(this, 650);
+    await UI.say([
+      { who: "mamaw", text: "Лёша! Тебя, наверное, даже в Италии слышно." },
+      { who: "papaw", text: "Вот и хорошо! Пусть Женя знает, что мы её провожаем всем Ковровом." }
+    ]);
+    await World.wait(this, 400);
     Save.store("ride");
     this.cameras.main.fadeOut(900, 0, 0, 0);
     this.time.delayedCall(950, () => this.scene.start("ride"));

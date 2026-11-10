@@ -2,19 +2,23 @@
    Правый клик или R — повернуть вещь. Через минуту можно позвать маму на помощь (клавиша H). */
 "use strict";
 class PackScene extends Phaser.Scene {
+  // Поднос слева и места вещей на нём: три ровных ряда, выровненных по центру
+  static TRAY = { x: 10, y: 30, w: 148, h: 120 };
+  static HOME = { dress: [20, 50], borsch: [58, 57], valenki: [96, 57], vodka: [134, 57],
+    herring: [23, 102], sneakers: [77, 102], makeup: [117, 102], scarf: [42, 126], passport: [112, 126] };
   constructor() { super("pack"); }
   create() {
     Sound.play("pack"); UI.goal("Уложи все вещи в чемодан"); UI.hint("Тяни мышкой · правый клик или R — повернуть");
     this.cameras.main.fadeIn(350, 0, 0, 0);
     this.input.mouse.disableContextMenu();
-    const C = Items.CELL, GX = 168, GY = 70, COLS = 7, ROWS = 4;
+    const C = Items.CELL, GX = 189, GY = 84, COLS = 7, ROWS = 4;
     this.G = { C, GX, GY, COLS, ROWS };
     this.grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
     // ---------- фон: пол, чемодан ----------
     const bg = this.bgCanvas();
     World.backdrop(this, "pack_bg", (g, t) => { g.drawImage(bg, 0, 0); this.drawGhost(g); });
     // ---------- вещи на полу слева ----------
-    const HOME = { borsch: [12, 34], vodka: [46, 30], valenki: [66, 34], herring: [12, 72], scarf: [64, 112], dress: [106, 30], passport: [116, 82], sneakers: [12, 96], makeup: [12, 118] };
+    const HOME = PackScene.HOME;
     this.items = Items.LIST.map(it => {
       const [hx, hy] = HOME[it.id];
       const spr = this.add.image(hx, hy, `item_${it.id}_0`).setOrigin(0).setDepth(10);
@@ -32,26 +36,45 @@ class PackScene extends Phaser.Scene {
     this.time.delayedCall(400, () => UI.toast("Мама: Всё должно влезть, я проверяла!"));
   }
   bgCanvas() {
-    const cv = PK.mk(320, 180), g = cv.getContext("2d"), R = PK.R, OL = RK.OL, rnd = PK.rng(4), { C, GX, GY, COLS, ROWS } = this.G;
-    // ковёр под вещами
+    const cv = PK.mk(320, 180), g = cv.getContext("2d"), R = PK.R, P = PK.P, OL = RK.OL, rnd = PK.rng(4), { C, GX, GY, COLS, ROWS } = this.G;
+    // ковёр
     R(g, 0, 0, 320, 180, "#7a2a2a");
-    for (let y = 0; y < 180; y += 12) for (let x = ((y / 12) & 1) * 12; x < 320; x += 24) { PK.poly(g, [[x + 6, y], [x + 12, y + 6], [x + 6, y + 12], [x, y + 6]], "#8a3430"); PK.P(g, x + 6, y + 6, "#e8b860"); }
+    for (let y = 0; y < 180; y += 12) for (let x = ((y / 12) & 1) * 12; x < 320; x += 24) { PK.poly(g, [[x + 6, y], [x + 12, y + 6], [x + 6, y + 12], [x, y + 6]], "#8a3430"); P(g, x + 6, y + 6, "#e8b860"); }
     RK.speck(g, rnd, 0, 0, 320, 180, 300, "#5a1e22", .6);
-    // зона «пол» слева — подсказка, где лежат вещи
-    g.globalAlpha = .25; R(g, 6, 24, 150, 150, "#000"); g.globalAlpha = 1; RK.box(g, 6, 24, 150, 150, "#e8b860");
-    // чемодан: крышка сверху, дно с сеткой
-    const W = COLS * C, H = ROWS * C;
+    // ---------- поднос «Мамины гостинцы»: аккуратные места под каждую вещь ----------
+    const T = PackScene.TRAY;
+    RK.shade(g, T.x + 3, T.y + T.h + 1, T.w, 4, .35);
+    R(g, T.x, T.y, T.w, T.h, "#e8d4b0"); R(g, T.x + 3, T.y + 14, T.w - 6, T.h - 17, "#d8bc90"); RK.box(g, T.x, T.y, T.w, T.h, OL);
+    for (let y = T.y + 16; y < T.y + T.h - 3; y += 4) for (let x = T.x + 5 + ((y >> 2) & 1) * 2; x < T.x + T.w - 4; x += 4) P(g, x, y, "#ccb084");
+    R(g, T.x + 1, T.y + 1, T.w - 2, 12, "#c8402a"); R(g, T.x + 1, T.y + 12, T.w - 2, 1, "#8a2a1e");
+    const title = "МАМИНЫ ГОСТИНЦЫ", tw = StationArt.textW(title); StationArt.text(g, title, Math.round(T.x + (T.w - tw) / 2), T.y + 4, "#fff4d8");
+    [[T.x + 6, T.y + 6], [T.x + T.w - 8, T.y + 6]].forEach(([x, y]) => { R(g, x, y, 2, 2, "#f2d23a"); });
+    Items.LIST.forEach(it => { const [hx, hy] = PackScene.HOME[it.id], w = it.w * C, h = it.h * C;
+      R(g, hx - 1, hy - 1, w + 2, h + 2, "#c4a274"); for (let x = hx - 1; x < hx + w + 1; x += 2) { P(g, x, hy - 2, "#a8865a"); P(g, x, hy + h + 1, "#a8865a"); } for (let y = hy - 1; y < hy + h + 1; y += 2) { P(g, hx - 2, y, "#a8865a"); P(g, hx + w + 1, y, "#a8865a"); } });
+    // ---------- чемодан ----------
+    const W = COLS * C, H = ROWS * C, cx = GX + W / 2, LY = GY - 50;
     RK.shade(g, GX - 4, GY + H + 6, W + 12, 5, .35);
-    R(g, GX - 6, GY - 46, W + 12, 40, "#c48a32"); R(g, GX - 3, GY - 43, W + 6, 34, "#e8c890"); RK.box(g, GX - 6, GY - 46, W + 12, 40, OL);
-    for (let x = GX; x < GX + W; x += 8) PK.P(g, x, GY - 26, "#c8a870");
-    // наклейки на крышке
-    R(g, GX + 4, GY - 40, 15, 9, "#3a8a4a"); R(g, GX + 9, GY - 40, 5, 9, "#f4ece0"); R(g, GX + 14, GY - 40, 5, 9, "#c8303a"); RK.box(g, GX + 3, GY - 41, 17, 11, OL);
-    R(g, GX + 26, GY - 38, 15, 3, "#f4ece0"); R(g, GX + 26, GY - 35, 15, 3, "#3a5ab0"); R(g, GX + 26, GY - 32, 15, 3, "#c8303a"); RK.box(g, GX + 25, GY - 39, 17, 11, OL);
-    R(g, GX - 4, GY - 6, W + 8, 4, "#8a5a2a");   // петли
+    // крышка: корпус, стёганая подкладка, две резинки и карман на молнии
+    R(g, GX - 6, LY, W + 12, 44, "#c48a32"); R(g, GX - 6, LY, W + 12, 2, "#e0a84a"); RK.box(g, GX - 6, LY, W + 12, 44, OL);
+    R(g, GX - 2, LY + 4, W + 4, 36, "#8a3a3a"); RK.box(g, GX - 2, LY + 4, W + 4, 36, "#5a2020");
+    for (let y = LY + 6; y < LY + 39; y += 6) for (let x = GX + 1 + ((((y - LY) / 6) & 1) ? 4 : 0); x < GX + W; x += 8) { P(g, x, y, "#a85050"); P(g, x - 1, y + 1, "#6a2a2a"); P(g, x + 1, y + 1, "#6a2a2a"); }
+    R(g, GX + 2, LY + 28, W - 4, 10, "#7a3030"); R(g, GX + 2, LY + 28, W - 4, 1, "#c8a040"); for (let x = GX + 3; x < GX + W - 3; x += 2) P(g, x, LY + 29, "#e8c060"); R(g, cx - 2, LY + 30, 4, 3, "#e8c060");
+    // наклейки строго по центру: Италия — сердечко — Россия
+    const flag = (x, y, cols, vertical) => { R(g, x - 1, y - 1, 17, 12, OL); cols.forEach((c, i) => vertical ? R(g, x + i * 5, y, 5, 10, c) : R(g, x, y + i * 3 + (i ? 1 : 0), 15, i ? 3 : 4, c)); R(g, x, y, 15, 1, "rgba(255,255,255,.35)"); };
+    flag(cx - 30, LY + 11, ["#3a8a4a", "#f4ece0", "#c8303a"], true);
+    flag(cx + 15, LY + 11, ["#f4ece0", "#3a5ab0", "#c8303a"], false);
+    ["01100110", "11111111", "11111111", "01111110", "00111100", "00011000"].forEach((row, y) => [...row].forEach((b, x) => { if (b === "1") P(g, cx - 4 + x, LY + 13 + y, y === 0 && x === 1 ? "#ffb0b8" : "#e84a5a"); }));
+    [GX + 9, GX + W - 9].forEach(x => { R(g, x - 2, LY + 4, 4, 24, "#2a2a30"); R(g, x - 3, LY + 14, 6, 4, "#c8c8d0"); });
+    // петли
+    R(g, GX - 4, GY - 6, W + 8, 4, "#8a5a2a"); [GX + 10, GX + W - 14].forEach(x => R(g, x, GY - 6, 4, 4, "#d8d0c0"));
+    // дно: корпус, подкладка, сетка-ячейки, ремни по бокам
     R(g, GX - 6, GY - 3, W + 12, H + 8, "#c48a32"); RK.box(g, GX - 6, GY - 3, W + 12, H + 8, OL);
-    R(g, GX - 1, GY - 1, W + 2, H + 2, "#4a2a1a"); R(g, GX, GY, W, H, "#5a3424");
-    for (let c = 0; c <= COLS; c++) R(g, GX + c * C, GY, 1, H, "#6a4430"); for (let r = 0; r <= ROWS; r++) R(g, GX, GY + r * C, W, 1, "#6a4430");
-    R(g, GX + W / 2 - 6, GY + H + 3, 12, 3, "#e8c060");    // замок
+    R(g, GX - 1, GY - 1, W + 2, H + 2, "#4a2020"); R(g, GX, GY, W, H, "#6a2a2a");
+    for (let y = GY; y < GY + H; y += 2) for (let x = GX + (y & 2 ? 1 : 0); x < GX + W; x += 4) P(g, x, y, "#723030");
+    for (let c = 1; c < COLS; c++) for (let y = GY; y < GY + H; y += 2) P(g, GX + c * C, y, "#8a4040");
+    for (let r = 1; r < ROWS; r++) for (let x = GX; x < GX + W; x += 2) P(g, x, GY + r * C, "#8a4040");
+    [GY + 3, GY + H - 6].forEach(y => { R(g, GX - 6, y, 3, 3, "#2a2a30"); R(g, GX + W + 3, y, 3, 3, "#2a2a30"); });
+    R(g, cx - 6, GY + H + 3, 12, 3, "#e8c060"); R(g, cx - 1, GY + H + 3, 2, 2, "#8a6a1e");    // замок по центру
     return cv;
   }
   dims(o, rot = o.rot) { return rot ? [o.it.h, o.it.w] : [o.it.w, o.it.h]; }
