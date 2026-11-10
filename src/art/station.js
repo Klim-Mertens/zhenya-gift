@@ -1,0 +1,102 @@
+/* Зимний вокзал вечером: перрон в снегу, фонари, скамейка, табличка «КОВРОВ», поезд РЖД.
+   Поезд — отдельная картинка, чтобы он мог уехать. */
+"use strict";
+window.StationArt = (() => {
+  const W = 320, H = 180, EDGE = 74;           // EDGE — край перрона
+  const R = PK.R, P = PK.P, OL = RK.OL;
+  // Пиксельный шрифт для вывесок (только нужные буквы)
+  const FONT = {
+    "К": ["101", "110", "100", "110", "101"], "О": ["010", "101", "101", "101", "010"], "В": ["110", "101", "110", "101", "110"],
+    "Р": ["110", "101", "110", "100", "100"], "Ж": ["10101", "10101", "01110", "10101", "10101"], "Д": ["0110", "0110", "0110", "1111", "1001"],
+    "1": ["010", "110", "010", "010", "111"], "8": ["111", "101", "111", "101", "111"], "4": ["101", "101", "111", "001", "001"], "0": ["111", "101", "101", "101", "111"], ":": ["0", "1", "0", "1", "0"]
+  };
+  function text(g, s, x, y, col, sc = 1) {
+    let cx = x;
+    for (const ch of s) { const f = FONT[ch]; if (!f) { cx += 3 * sc; continue; }
+      f.forEach((row, yy) => [...row].forEach((b, xx) => { if (b === "1") R(g, cx + xx * sc, y + yy * sc, sc, sc, col); }));
+      cx += (f[0].length + 1) * sc; }
+    return cx - x;
+  }
+  const textW = (s, sc = 1) => [...s].reduce((a, ch) => a + ((FONT[ch] ? FONT[ch][0].length : 2) + 1) * sc, 0) - sc;
+
+  function staticLayer() {
+    const cv = PK.mk(W, H), g = cv.getContext("2d"), rnd = PK.rng(23);
+    // ---------- вечернее небо и ели за путями ----------
+    PK.gradV(g, 0, 0, W, 30, ["#141a36", "#22305a", "#3a4a78"]);
+    for (let x = -4; x < W; x += 9) { const h = 10 + Math.floor(rnd() * 10); for (let k = 0; k < h; k++) { const w = Math.round(k * .45) + 1; R(g, x - w, 22 - h + k, w * 2, 1, "#16243a"); if (k % 3 === 0) R(g, x - w, 22 - h + k, w, 1, "#c8d8ec"); } }
+    // ---------- пути ----------
+    R(g, 0, 22, W, EDGE - 22, "#4a4a58"); for (let x = 0; x < W; x += 6) R(g, x, 58, 4, 12, "#3a3038");
+    R(g, 0, 60, W, 2, "#8a8a98"); R(g, 0, 67, W, 2, "#8a8a98");
+    RK.speck(g, rnd, 0, 22, W, 50, 200, "#e8f0f8", .8);
+    // ---------- перрон ----------
+    R(g, 0, EDGE, W, H - EDGE, "#dde6f0");
+    for (let y = EDGE; y < H; y++) for (let x = 0; x < W; x++) { const n = Math.sin(x * .09 + y * .05) + Math.sin(y * .13 - x * .03); if (n + (PK.bayer(x, y) - .5) * 1.2 > 1.1) P(g, x, y, "#c4d0e0"); else if (n + (PK.bayer(x, y) - .5) * 1.2 < -1.3) P(g, x, y, "#f2f6fa"); }
+    R(g, 0, EDGE, W, 3, "#e8c040"); R(g, 0, EDGE + 3, W, 1, "#b89a30"); for (let x = 0; x < W; x += 12) R(g, x, EDGE, 6, 3, "#3a3038");   // жёлтая полоса
+    RK.shade(g, 0, EDGE + 4, W, 2, .2, "#1a2a4a");
+    // утоптанная тропинка и следы
+    for (let x = 0; x < W; x++) { const y = 120 + Math.round(Math.sin(x / 40) * 6); R(g, x, y, 1, 10, PK.bayer(x, y) > .5 ? "#c8d2de" : "#d2dce8"); }
+    for (let i = 0; i < 26; i++) { const x = 8 + i * 12, y = 122 + Math.round(Math.sin(x / 40) * 6) + (i % 2) * 4; R(g, x, y, 2, 3, "#a8b4c8"); }
+    // ---------- скамейка в снегу ----------
+    RK.shadeEll(g, 52, 108, 22, 3, .25, "#1a2a4a");
+    RK.block(g, 30, 94, 44, 4, 8, { top: "#8a5a32", front: "#6a4024" }); R(g, 30, 93, 44, 2, "#f2f6fa"); R(g, 32, 102, 3, 6, "#2a2a30"); R(g, 69, 102, 3, 6, "#2a2a30");
+    // ---------- табличка «КОВРОВ» ----------
+    const sx = 236, sy = 88, tw = textW("КОВРОВ", 2) + 10;
+    R(g, sx + 4, sy + 14, 2, 20, "#3a3a48"); R(g, sx + tw - 6, sy + 14, 2, 20, "#3a3a48");
+    R(g, sx, sy, tw, 16, "#1e4a8a"); RK.box(g, sx, sy, tw, 16, OL); RK.box(g, sx + 1, sy + 1, tw - 2, 14, "#f4f0e8"); text(g, "КОВРОВ", sx + 5, sy + 3, "#f4f0e8", 2);
+    R(g, sx, sy - 2, tw, 2, "#f2f6fa");
+    RK.shadeEll(g, sx + tw / 2, sy + 35, tw / 2, 2, .2, "#1a2a4a");
+    // ---------- часы на столбе ----------
+    R(g, 150, 100, 2, 34, "#3a3a48"); R(g, 140, 90, 22, 11, "#2a2a34"); RK.box(g, 140, 90, 22, 11, OL); text(g, "18:40", 142, 93, "#ff8a4a");
+    // ---------- урна, киоск ----------
+    R(g, 112, 140, 7, 9, "#4a5a4a"); R(g, 112, 139, 7, 2, "#f2f6fa"); RK.box(g, 112, 140, 7, 9, OL);
+    RK.block(g, 286, 140, 30, 6, 30, { top: "#f2f6fa", front: "#3f6f8f" }); R(g, 290, 152, 22, 10, "#f2c87a"); R(g, 291, 153, 6, 3, "#c8402a"); R(g, 299, 156, 4, 5, "#ffffff"); R(g, 305, 154, 5, 4, "#4ab06a");
+    // нижний край: ограда
+    for (let x = 0; x < W; x += 8) R(g, x, H - 8, 2, 8, "#3a3a48"); R(g, 0, H - 7, W, 2, "#3a3a48"); R(g, 0, H - 9, W, 1, "#f2f6fa");
+    return cv;
+  }
+  const LAMPS = [[18, 82], [120, 82], [210, 82], [306, 82]];
+  // Поезд: два вагона по 200 px, у каждого дверь
+  function train() {
+    const L = 420, cv = PK.mk(L, 54), g = cv.getContext("2d");
+    for (let c = 0; c < 2; c++) {
+      const x0 = c * 212;
+      R(g, x0, 2, 206, 6, "#7a8088"); for (let x = x0 + 10; x < x0 + 200; x += 26) R(g, x, 3, 10, 3, "#5a6068");
+      R(g, x0, 8, 206, 36, "#d4d8dc"); R(g, x0, 8, 206, 1, "#eef0f2"); R(g, x0, 30, 206, 6, "#d8202c"); R(g, x0, 36, 206, 1, "#8a1018"); R(g, x0, 43, 206, 1, "#9aa0a8");
+      for (let k = 0; k < 11; k++) { const wx = x0 + 8 + k * 17; if (wx > x0 + 160 && wx < x0 + 190) continue;
+        R(g, wx, 13, 12, 13, "#24304c"); R(g, wx + 1, 14, 10, 11, (k * 7 + c) % 3 ? "#f2c87a" : "#3a4a6a"); R(g, wx + 1, 14, 10, 1, "#fff0c0"); RK.box(g, wx, 13, 12, 13, "#5a6068");
+        if ((k * 7 + c) % 3) { R(g, wx + 2, 21, 3, 4, "#8a4a3a"); R(g, wx + 7, 20, 3, 5, "#3a5a8a"); } }
+      // дверь
+      R(g, x0 + 170, 11, 16, 33, "#b8bcc2"); RK.box(g, x0 + 170, 11, 16, 33, "#5a6068"); R(g, x0 + 172, 14, 12, 10, "#24304c"); R(g, x0 + 173, 15, 3, 8, "#4a5a7a");
+      // логотип
+      R(g, x0 + 4, 31, 30, 4, "#d8202c"); text(g, "РЖД", x0 + 140, 31, "#f4f0e8");
+      // ходовая часть
+      R(g, x0 + 4, 44, 198, 6, "#2a2a30"); [18, 40, 166, 188].forEach(wx => { PK.ell(g, x0 + wx, 49, 5, 4, "#1a1a1e"); P(g, x0 + wx, 49, "#6a6a72"); });
+      // снег на крыше
+      R(g, x0, 1, 206, 2, "#f2f6fa"); for (let x = x0; x < x0 + 206; x += 7) P(g, x, 3, "#f2f6fa");
+      RK.box(g, x0, 1, 206, 44, OL);
+      if (c === 0) { R(g, x0 + 206, 26, 6, 4, "#2a2a30"); }
+    }
+    return cv;
+  }
+  const DOOR_X = 170;            // дверь первого вагона в координатах поезда
+  function create() {
+    const bg = staticLayer(), rnd = PK.rng(9);
+    const flakes = Array.from({ length: 110 }, () => ({ x: rnd() * W, y: rnd() * H, s: .5 + rnd() * .8, d: rnd() * 6 }));
+    return {
+      back: (g, t) => {
+        const s = t / 1000; g.drawImage(bg, 0, 0);
+        // фонари и тёплые круги света на снегу
+        LAMPS.forEach(([x, y]) => { g.globalAlpha = .18; PK.ell(g, x, y + 34, 22, 8, "#ffd88a"); g.globalAlpha = .1; PK.ell(g, x, y + 34, 32, 12, "#ffd88a"); g.globalAlpha = 1;
+          R(g, x, y, 2, 34, "#3a3a48"); R(g, x - 4, y - 2, 10, 3, "#3a3a48"); R(g, x - 3, y + 1, 8, 2, "#fff0b0"); R(g, x - 4, y - 3, 10, 1, "#f2f6fa"); });
+      },
+      front: (g, t) => {
+        const s = t / 1000;
+        flakes.forEach(f => { const y = (f.y + s * 22 * f.s) % H, x = (f.x + Math.sin(s * .8 + f.d) * 4 - s * 6 * f.s + W * 10) % W; P(g, x, y, f.s > 1 ? "#ffffff" : "#d8e4f4"); });
+        // свет фонарей поверх
+        LAMPS.forEach(([x, y]) => { g.globalAlpha = .25; PK.ell(g, x + 1, y + 2, 6, 4, "#fff0b0"); g.globalAlpha = 1; });
+      },
+      train: train()
+    };
+  }
+  return { create, W, H, EDGE, DOOR_X, text, textW };
+})();

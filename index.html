@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Лето Жени</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tiny5&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="stage">
+  <div id="ui">
+    <div id="goal" hidden></div>
+    <div id="hint" hidden></div>
+    <div id="toast" hidden></div>
+    <div id="banner" class="banner" hidden></div>
+    <div id="card" hidden><div id="ctitle"></div><div id="csub"></div></div>
+    <div id="dialog" hidden>
+      <canvas id="dportrait" width="16" height="16"></canvas>
+      <div id="dname"></div>
+      <div id="dtext"></div>
+      <div id="dmore" hidden>▼</div>
+    </div>
+    <div id="title" hidden>
+      <h1>Лето Жени</h1>
+      <p class="sub">игра-подарок на день рождения</p>
+      <div class="menu">
+        <button id="bstart" type="button">Начать</button>
+        <button id="bcont" type="button" hidden>Продолжить</button>
+      </div>
+      <p class="keys">Стрелки или WASD — ходить · Пробел или E — говорить и действовать · M — звук</p>
+    </div>
+    <button id="mute" type="button" title="Звук (M)" aria-label="Включить или выключить звук">♪</button>
+  </div>
+</div>
+<noscript>Для игры нужен JavaScript.</noscript>
+<script src="vendor/phaser.min.js"></script>
+<script src="src/art/pk.js"></script>
+<script src="src/art/rk.js"></script>
+<script src="src/art/people.js"></script>
+<script src="src/art/items.js"></script>
+<script src="src/art/home.js"></script>
+<script src="src/art/station.js"></script>
+<script src="src/art/ride.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/ui.js"></script>
+<script src="src/save.js"></script>
+<script src="src/world.js"></script>
+<script src="src/scenes/boot.js"></script>
+<script src="src/scenes/title.js"></script>
+<script src="src/scenes/home.js"></script>
+<script src="src/scenes/pack.js"></script>
+<script src="src/scenes/station.js"></script>
+<script src="src/scenes/ride.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
