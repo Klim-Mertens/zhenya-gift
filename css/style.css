@@ -61,3 +61,14 @@ body { display: grid; place-items: center; font-family: "Tiny5", monospace; colo
 #mute.off { text-decoration: line-through; opacity: .45; }
 
 .banner.chant .who b.gi { background: #7ac8a0; }
+
+#rules { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10, 8, 16, .6); pointer-events: auto; }
+#rules .rbox { background: #2a1c2e; border: calc(2px * var(--z)) solid #e8b860; box-shadow: 0 0 0 calc(1px * var(--z)) #3b2420; padding: calc(6px * var(--z)) calc(9px * var(--z)); width: calc(250px * var(--z)); color: #f4ead8; }
+#rules .rtitle { font-size: calc(11px * var(--z)); color: #ffe9b0; text-align: center; margin-bottom: calc(4px * var(--z)); text-shadow: calc(1px * var(--z)) calc(1px * var(--z)) 0 #3b2420; }
+#rules .rrow { display: flex; align-items: center; gap: calc(6px * var(--z)); margin: calc(3px * var(--z)) 0; }
+#rules .ricons { display: flex; align-items: flex-end; gap: calc(2px * var(--z)); min-width: calc(76px * var(--z)); justify-content: flex-end; }
+#rules canvas { image-rendering: pixelated; }
+#rules .rkey { display: inline-block; min-width: calc(9px * var(--z)); padding: calc(1px * var(--z)) calc(2px * var(--z)); background: #f4ead8; color: #3b2420; border-bottom: calc(2px * var(--z)) solid #a8906a; font-size: calc(6px * var(--z)); text-align: center; }
+#rules .rtext { font-size: calc(6px * var(--z)); line-height: 1.35; flex: 1; }
+#rules .rfoot { margin-top: calc(5px * var(--z)); text-align: center; font-size: calc(6px * var(--z)); color: #f2c46a; animation: blinkf 1s steps(2) infinite; }
+@keyframes blinkf { 50% { opacity: .35; } }

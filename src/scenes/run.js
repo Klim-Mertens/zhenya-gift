@@ -1,5 +1,7 @@
 /* Глава 2, часть 1: «Догони Леру». Раннер в парке Семпионе.
-   Пробел / ↑ / W — прыжок, ↓ / S — пригнуться. Три сердечка, скорость растёт. */
+   A и D (или ← →) по очереди — бег: чем чаще жмёшь, тем быстрее.
+   Пробел / ↑ / W — прыжок, ↓ / S — пригнуться. Три сердечка.
+   gap — отставание от Леры: догнала (gap ≤ WIN) — победа, отстала (gap ≥ LOSE) — заново. */
 "use strict";
 class RunScene extends Phaser.Scene {
   constructor() { super("run"); }
@@ -7,14 +9,19 @@ class RunScene extends Phaser.Scene {
     Save.store("run"); Sound.play("centrale"); UI.goal(""); UI.hint("");
     this.cameras.main.fadeIn(600, 0, 0, 0);
     this.bg = ParkArt.sempione();
-    this.G = ParkArt.GROUND; this.D = 5200;          // длина забега в пикселях
+    this.G = ParkArt.GROUND;
+    this.GAP0 = 1400; this.WIN = 60; this.LOSE = 1900;  // отставание от Леры (в пикселях пути)
     this.state = "intro"; this.off = 0; this.leX = 360;
     this.reset();
-    this.keys = { up: false, down: false };
+    this.keys = { up: false, down: false }; this.lastSide = null;
     World.backdrop(this, "run_bg", (g, t) => this.draw(g, t), -1000);
     const kd = e => {
       if (["Space", "ArrowUp", "KeyW"].includes(e.code)) { if (this.state === "run" && !UI.busy) { e.preventDefault(); this.jumpBuf = .12; } }
       if (["ArrowDown", "KeyS"].includes(e.code)) this.keys.down = true;
+      // бег: засчитывается только чередование левой и правой клавиши (зажать одну — не поможет)
+      const side = ["KeyA", "ArrowLeft"].includes(e.code) ? "L" : ["KeyD", "ArrowRight"].includes(e.code) ? "R" : null;
+      if (side && !e.repeat && this.state === "run" && !UI.busy) { e.preventDefault();
+        if (side !== this.lastSide) { this.tempo = Math.min(1, this.tempo + .12); this.lastSide = side; this.stepFx = .08; } }
     };
     const ku = e => { if (["ArrowDown", "KeyS"].includes(e.code)) this.keys.down = false; };
     window.addEventListener("keydown", kd); window.addEventListener("keyup", ku);
@@ -22,7 +29,7 @@ class RunScene extends Phaser.Scene {
     this.time.delayedCall(700, () => this.intro());
   }
   reset() {
-    this.dist = 0; this.v = 0; this.y = 0; this.vy = 0; this.hearts = 3; this.inv = 0; this.water = 0; this.slow = 0;
+    this.dist = 0; this.v = 0; this.tempo = 0; this.gap = this.GAP0; this.lv = 0; this.warnT = 0; this.stepFx = 0; this.lastSide = null; this.y = 0; this.vy = 0; this.hearts = 3; this.inv = 0; this.water = 0; this.slow = 0;
     this.obs = []; this.nextGap = 260; this.jumpBuf = 0; this.t = 0; this.cheerT = 4; this.pig = [];
   }
   tex(key) { return this.textures.get(key).getSourceImage(); }
@@ -38,9 +45,34 @@ class RunScene extends Phaser.Scene {
       { who: "zhs", text: "Ох... Ладно, мамины бутерброды, выручайте!" }
     ]);
     this.tweens.add({ targets: this, leX: 270, duration: 900 });
-    await UI.card("Догони Леру!", "Пробел или ↑ — прыжок · ↓ — пригнуться · 3 сердечка", 2600);
+    await this.rules();
+    await this.countdown();
+  }
+  async countdown() {
     for (const n of ["3", "2", "1"]) { UI.banner(`<div class="syl"><span>${n}</span></div>`, "chant", 600); Sound.sfx("blip", 1.6); await World.wait(this, 650); }
-    Sound.sfx("whistle"); this.state = "run"; this.v = 95; UI.goal("Догони Леру!");
+    Sound.sfx("whistle"); Sound.play("sprint"); this.state = "run"; UI.goal("Жми A и D по очереди — догони Леру!");
+  }
+  // экран правил с картинками препятствий
+  rules() {
+    const zh = n => this.tex(`zh_summer_side_${n}`);
+    const crop = (img, sx, sy, w, h) => { const c = PK.mk(w, h); c.getContext("2d").drawImage(img, sx, sy, w, h, 0, 0, w, h); return c; };
+    const slide = (() => { const c = PK.mk(16, 14); c.getContext("2d").drawImage(zh(0), 0, 0, 16, 26, 0, 0, 16, 14); return c; })();
+    return UI.rules("Догони Леру!", [
+      { keys: ["A", "D"], icons: [zh(0), zh(1)], text: "Быстро жми A и D по очереди — так Женя бежит. Чем чаще жмёшь, тем быстрее! Зажать одну кнопку не поможет." },
+      { keys: ["Пробел"], icons: ["puddle", "bench", "dog", "scooter"].map(t => this.icon(t)), text: "Прыжок: перепрыгивай лужи, скамейки, собачек и самокатчиков." },
+      { keys: ["↓"], icons: [slide, this.icon("selfie"), this.icon("branch")], text: "Пригнись (держи ↓) под селфи-палкой и низкой веткой." },
+      { icons: ["water", "heart", "pigeons"].map(t => this.icon(t)), text: "Вода и сердечки — бонусы. Голуби безобидные, сами разлетятся." },
+      { icons: [crop(this.tex("le_run_side_0"), 0, 0, 16, 23)], text: "3 столкновения или Лера убежала за край экрана — начинаешь заново. Догони её!" }
+    ]);
+  }
+  // маленькая картинка препятствия для правил
+  icon(type) {
+    const S = { puddle: [24, 7, 0], bench: [26, 20, 1], dog: [17, 12, 2], scooter: [17, 24, 2], selfie: [36, 34, 11], branch: [30, 22, 1], water: [10, 13, 0], heart: [9, 8, 0], pigeons: [26, 7, 1] }[type];
+    const [w, h, dx] = S, c = PK.mk(w, h), g = c.getContext("2d");
+    const o = { type, x: dx, w: { selfie: 22, branch: 26 }[type] || 20, lo: 0 };
+    const G = type === "branch" ? 44 : type === "water" ? 12 : type === "heart" ? 8 : type === "puddle" ? 3 : h - 2;
+    this.drawObs(g, o, dx, G, 0);
+    return c;
   }
   // ---------- препятствия ----------
   spawn() {
@@ -65,14 +97,18 @@ class RunScene extends Phaser.Scene {
     const dt = Math.min(.05, dtMs / 1000);
     if (this.state !== "run" || UI.busy) return;
     this.t += dt;
-    this.v = Math.min(170, 95 + this.dist * .014) * (this.slow > 0 ? .65 : 1);
+    // темп угасает, если не жать; скорость Жени зависит от темпа
+    this.tempo = Math.max(0, this.tempo - (this.tempo * .8 + .1) * dt); this.stepFx = Math.max(0, this.stepFx - dt);
+    this.v = (30 + 160 * this.tempo) * (this.slow > 0 ? .6 : 1);
+    this.lv = Math.min(126, 104 + this.t * .4);       // Лера понемногу разгоняется
+    this.gap += (this.lv - this.v) * dt;
     this.slow = Math.max(0, this.slow - dt); this.inv = Math.max(0, this.inv - dt); this.jumpBuf = Math.max(0, this.jumpBuf - dt);
     const step = this.v * dt; this.dist += step; this.off += step;
     // прыжок и гравитация (y: 0 — земля, отрицательный — в воздухе)
     if (this.jumpBuf > 0 && this.y >= 0) { this.vy = -205; this.jumpBuf = 0; Sound.sfx("pick"); }
     if (this.y < 0 || this.vy < 0) { this.vy += (this.keys.down ? 900 : 560) * dt; this.y += this.vy * dt; if (this.y >= 0) { this.y = 0; this.vy = 0; } }
     // препятствия
-    this.nextGap -= step; if (this.nextGap <= 0 && this.dist < this.D - 300) this.spawn();
+    this.nextGap -= step; if (this.nextGap <= 0 && this.gap > 300) this.spawn();
     const hb = this.hitbox();
     this.obs.forEach(o => {
       o.x += o.vx * dt - step;
@@ -90,20 +126,22 @@ class RunScene extends Phaser.Scene {
     });
     this.obs = this.obs.filter(o => o.x > -60);
     // Лера: впереди, расстояние сокращается
-    const k = Math.min(1, this.dist / this.D); this.leX = 270 - k * 170;
+    this.leX = 70 + this.gap * .143;
+    this.warnT -= dt; if (this.gap > 1650 && this.warnT <= 0) { this.warnT = 3; UI.toast("Лера убегает! Жми A-D быстрее!", 1400); }
     this.cheerT -= dt; if (this.cheerT <= 0) { this.cheerT = 7 + Math.random() * 4; UI.toast(["Лера: Давай-давай!", "Лера: Дыши ровно!", "Лера: Ещё чуть-чуть!", "Лера: Ты сможешь!", "Лера: Не отставай!"][Math.floor(Math.random() * 5)], 1500); }
-    if (this.dist >= this.D) this.finish();
+    if (this.gap <= this.WIN) this.finish();
+    else if (this.gap >= this.LOSE) this.fail(true);
   }
-  async fail() {
+  async fail(lost) {
     this.state = "fail"; UI.goal("");
     await World.wait(this, 500);
-    await UI.say([{ who: "le", text: "Женя, ты как? Цела? Отдышись и давай ещё разок, я подожду!" }]);
+    await UI.say([lost ? { who: "le", text: "Женя, ты где? Я уже у фонтана! Возвращаюсь... Жми A и D почаще, давай ещё разок!" }
+      : { who: "le", text: "Женя, ты как? Цела? Отдышись и давай ещё разок, я подожду!" }]);
     this.reset(); this.leX = 270;
-    for (const n of ["3", "2", "1"]) { UI.banner(`<div class="syl"><span>${n}</span></div>`, "chant", 600); Sound.sfx("blip", 1.6); await World.wait(this, 650); }
-    this.state = "run"; this.v = 95; UI.goal("Догони Леру!");
+    await this.countdown();
   }
   async finish() {
-    this.state = "done"; UI.goal(""); Sound.sfx("done");
+    this.state = "done"; UI.goal(""); Sound.sfx("done"); Sound.play("centrale");
     this.tweens.add({ targets: this, leX: 92, duration: 900 });
     await World.wait(this, 1000);
     await UI.say([
@@ -118,11 +156,9 @@ class RunScene extends Phaser.Scene {
     this.time.delayedCall(750, () => this.scene.start("match"));
   }
   // ---------- отрисовка ----------
-  draw(g, t) {
-    const R = PK.R, P = PK.P, OL = RK.OL, G = this.G, s = t / 1000;
-    this.bg(g, this.off, t);
-    // препятствия
-    this.obs.forEach(o => { const x = Math.round(o.x); if (o.hit && (o.type === "water" || o.type === "heart")) return;
+  // одно препятствие: x — левый край, G — линия земли, s — время в секундах (для анимации)
+  drawObs(g, o, x, G, s) {
+    const R = PK.R, P = PK.P, OL = RK.OL;
       switch (o.type) {
         case "puddle": PK.ell(g, x + 10, G + 2, 11, 3, "#7ab0d8"); PK.ell(g, x + 8, G + 1, 5, 1, "#c8e4f4"); break;
         case "bench": RK.block(g, x, G - 12, 24, 3, 6, { top: "#8a5a32", front: "#6a4024" }); R(g, x, G - 18, 24, 3, "#8a5a32"); RK.box(g, x, G - 18, 24, 3, OL); R(g, x + 2, G - 3, 2, 3, "#2a2a30"); R(g, x + 20, G - 3, 2, 3, "#2a2a30"); break;
@@ -139,14 +175,21 @@ class RunScene extends Phaser.Scene {
           else { const px = x + k * 6, peck = Math.sin(s * 3 + k) > .6 ? 1 : 0; R(g, px, G - 4, 5, 3, "#8a8a98"); R(g, px + 4, G - 5 + peck, 2, 2, "#6a6a78"); P(g, px + 5, G - 5 + peck, OL); } } break;
         case "water": { const y = G - o.lo - 10 + Math.round(Math.sin(s * 4 + o.x * .1)); R(g, x + 2, y, 5, 9, "#8ad0ff"); R(g, x + 3, y - 2, 3, 2, "#3a6ac8"); R(g, x + 3, y + 3, 3, 3, "#f4f0e8"); RK.box(g, x + 2, y, 5, 9, "#3a6ac8"); break; }
         case "heart": { const y = G - o.lo - 8 + Math.round(Math.sin(s * 4) * 2); ["01100110", "11111111", "11111111", "01111110", "00111100", "00011000"].forEach((row, yy) => [...row].forEach((b, xx) => { if (b === "1") P(g, x + xx, y + yy, "#e84a5a"); })); break; }
-      } });
+      }
+  }
+  draw(g, t) {
+    const R = PK.R, P = PK.P, OL = RK.OL, G = this.G, s = t / 1000;
+    this.bg(g, this.off, t);
+    // препятствия
+    this.obs.forEach(o => { if (!(o.hit && (o.type === "water" || o.type === "heart"))) this.drawObs(g, o, Math.round(o.x), G, s); });
     // Лера впереди
     const lf = Math.floor(s * 8) % 2, lk = this.state === "intro" && this.leX >= 199 && this.leX <= 201 ? "le_run_side_0" : `le_run_side_${lf}`;
-    g.drawImage(this.tex(lk), Math.round(this.leX) - 8, G - 23 + (lf && this.state !== "done" ? -1 : 0));
+    const hop = this.obs.some(o => !o.harmless && !o.pickup && o.lo < 10 && Math.abs(o.x + o.w / 2 - this.leX) < 16) ? -9 : 0;  // Лера перепрыгивает препятствия
+    g.drawImage(this.tex(hop ? "le_run_side_1" : lk), Math.round(this.leX) - 8, G - 23 + hop + (lf && this.state !== "done" ? -1 : 0));
     // Женя
     const hb = this.hitbox(), blinkOff = this.inv > 0 && Math.floor(s * 12) % 2;
     if (!blinkOff) {
-      const air = this.y < 0, f = this.state === "run" ? Math.floor(s * 9) % 2 : 0, img = this.tex(air ? "zh_summer_side_1" : `zh_summer_side_${f}`);
+      const air = this.y < 0, f = this.state === "run" && this.v > 35 ? Math.floor(this.off / 16) % 2 : 0, img = this.tex(air ? "zh_summer_side_1" : `zh_summer_side_${f}`);
       if (hb.slide) g.drawImage(img, 0, 0, 16, 26, 62, G - 14, 16, 14);
       else g.drawImage(img, 62, Math.round(G - 26 + this.y));
     }
@@ -154,10 +197,19 @@ class RunScene extends Phaser.Scene {
     if (this.state === "intro") return;
     // интерфейс: сердечки, вода, полоса до Леры
     for (let i = 0; i < 3; i++) ["01100110", "11111111", "11111111", "01111110", "00111100", "00011000"].forEach((row, yy) => [...row].forEach((b, xx) => { if (b === "1") P(g, 6 + i * 11 + xx, 166 + yy, i < this.hearts ? "#e84a5a" : "#5a3a40"); }));
-    const bx = 100, bw = 140, k = Math.min(1, this.dist / this.D);
+    const bx = 100, bw = 140, k = Math.max(0, Math.min(1, 1 - (this.gap - this.WIN) / (this.LOSE - this.WIN)));
     R(g, bx, 168, bw, 4, "#3a3a48"); R(g, bx, 168, bw * k, 4, "#f2c23a"); RK.box(g, bx - 1, 167, bw + 2, 6, OL);
     g.drawImage(this.tex("zh_summer_front_0"), 0, 0, 16, 12, bx + bw * k - 8, 154, 16, 12);
     g.drawImage(this.tex("le_run_front_0"), 0, 0, 16, 12, bx + bw - 8, 154, 16, 12);
+    // шкала темпа и подсказка A / D над Женей, пока темп низкий
+    StationArt.text(g, "ТЕМП", 42, 160, "#ffffff");
+    R(g, 42, 168, 50, 4, "#3a3a48"); R(g, 42, 168, 50 * this.tempo, 4, this.tempo > .66 ? "#5ad85a" : this.tempo > .33 ? "#f2c23a" : "#e84a5a"); RK.box(g, 41, 167, 52, 6, OL);
+    if (this.state === "run" && (this.tempo < .4 || this.t < 4)) {
+      const blink = Math.floor(s * 6) % 2, next = this.lastSide === "L" ? "R" : "L";
+      [["A", "L", 57], ["D", "R", 72]].forEach(([ch, sd, kx]) => { const on = sd === next && blink, ky = G - 48 + (on ? 1 : 0);
+        R(g, kx, ky, 11, 11, on ? "#f2d23a" : "#f4ead8"); R(g, kx, ky + 11, 11, 2, "#a8906a"); RK.box(g, kx, ky, 11, 13, OL); StationArt.text(g, ch, kx + 3, ky + 3, OL); });
+    }
+    if (this.stepFx > 0) PK.ell(g, 60, G - 1, 3, 1, "#d8c8a0");
     R(g, 290, 166, 5, 8, "#8ad0ff"); RK.box(g, 290, 166, 5, 8, "#3a6ac8"); StationArt.text(g, String(this.water), 298, 168, "#ffffff");
   }
 }

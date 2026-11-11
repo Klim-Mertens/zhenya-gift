@@ -97,7 +97,15 @@ class DuelScene extends Phaser.Scene {
     this.charge = -1;
   }
   async intro() {
-    await UI.card("Обыграй Леру!", "Стрелки — бег · Пробел — удар (держи сильнее) · Shift — рывок", 3000);
+    const tx = k => this.textures.get(k).getSourceImage();
+    const ball = PK.mk(8, 8); drawBall(ball.getContext("2d"), 4, 5);
+    await UI.rules("Обыграй Леру!", [
+      { keys: ["←", "↑", "↓", "→"], icons: [tx("zh_summer_side_1"), ball], text: "Стрелки или WASD — бег. Мяч катится перед Женей сам." },
+      { keys: ["Пробел"], text: "Удар: зажми пробел, чтобы набрать силу (полоска над Женей), отпусти — мяч летит. Целься в ворота справа." },
+      { keys: ["Shift"], text: "Рывок: бежишь быстрее, но тратишь силы. Они восстанавливаются, когда отпускаешь." },
+      { icons: [tx("le_kit_side_0")], text: "Лера отбирает мяч, блокирует слабые удары и бросается в ноги. Обведи её!" },
+      { text: "Забей 3 гола за 2 минуты. Не успела — попробуешь ещё раз." }
+    ]);
     for (const n of ["3", "2", "1"]) { UI.banner(`<div class="syl"><span>${n}</span></div>`, "chant", 600); Sound.sfx("blip", 1.6); await World.wait(this, 650); }
     Sound.sfx("whistle"); this.state = "play";
   }

@@ -51,6 +51,13 @@ class KitchenScene extends Phaser.Scene {
       { who: "na", text: "«Кухонная война начинается». Он всегда так говорит, когда мы готовим одновременно." },
       { who: "na", text: "Сначала долма! Я говорю, что нужно, а ты подаёшь с полки. Наводи мышку, там подписи." }
     ]);
+    const food = id => this.textures.get(`food_${id}`).getSourceImage();
+    await UI.rules("Помоги на кухне!", [
+      { icons: ["leaves", "rice", "onion"].map(food), text: "Внизу полка с продуктами. Наведи мышку — появится подпись." },
+      { icons: [this.textures.get("na_front_0").getSourceImage()], text: "Нарина просит продукт по-русски — кликни по нужному." },
+      { icons: [this.textures.get("gi_idle").getSourceImage()], text: "Джан просит только по-итальянски! Над головой у него будет «?». Ошиблась — Нарина переведёт." },
+      { icons: ["pineapple", "ketchup"].map(food), text: "Продукты каждый раз перемешиваются. Ананас в карбонару лучше не класть..." }
+    ], "Пробел или клик — начать");
     this.shelfOn = true;
     await this.round("na", ["leaves", "mince", "rice", "onion", "herbs", "matsun"], id => `Нарина просит: ${Food.byId(id).ru}`);
     this.shelfOn = false; this.ask = null; UI.goal("");

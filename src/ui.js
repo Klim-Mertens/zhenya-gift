@@ -56,6 +56,29 @@ window.UI = (() => {
     const el = $("card"); $("ctitle").textContent = clean(title); $("csub").textContent = clean(sub); el.hidden = false; el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
     return new Promise(r => setTimeout(() => { el.hidden = true; r(); }, ms));
   }
+  // Правила мини-игры: заголовок, строки «картинки + текст», ждём пробел/Enter/клик
+  // rows: [{ icons: [canvas, ...], keys: ["A", "D"], text: "..." }]
+  function rules(title, rows, foot = "Пробел — начать") {
+    busy = true;
+    let el = $("rules"); if (!el) { el = document.createElement("div"); el.id = "rules"; $("ui").appendChild(el); }
+    el.innerHTML = ""; el.hidden = false;
+    const box = document.createElement("div"); box.className = "rbox"; el.appendChild(box);
+    const h = document.createElement("div"); h.className = "rtitle"; h.textContent = clean(title); box.appendChild(h);
+    rows.forEach(r => {
+      const row = document.createElement("div"); row.className = "rrow";
+      const ic = document.createElement("div"); ic.className = "ricons";
+      (r.keys || []).forEach(k => { const kb = document.createElement("span"); kb.className = "rkey"; kb.textContent = k; ic.appendChild(kb); });
+      (r.icons || []).forEach(cv => { const c = document.createElement("canvas"); c.width = cv.width; c.height = cv.height; c.style.width = `calc(${cv.width}px * var(--z))`; c.style.height = `calc(${cv.height}px * var(--z))`; c.getContext("2d").drawImage(cv, 0, 0); ic.appendChild(c); });
+      const tx = document.createElement("div"); tx.className = "rtext"; tx.textContent = clean(r.text);
+      row.appendChild(ic); row.appendChild(tx); box.appendChild(row);
+    });
+    const f = document.createElement("div"); f.className = "rfoot"; f.textContent = clean(foot); box.appendChild(f);
+    return new Promise(resolve => {
+      const done = e => { if (e.type === "keydown" && !["Space", "Enter", "NumpadEnter"].includes(e.code)) return; e.preventDefault(); window.removeEventListener("keydown", done); el.removeEventListener("pointerdown", done);
+        Sound.sfx("select"); el.hidden = true; busy = false; setTimeout(resolve, 50); };
+      setTimeout(() => { window.addEventListener("keydown", done); el.addEventListener("pointerdown", done); }, 400);
+    });
+  }
   function hint(text) { const el = $("hint"); el.textContent = clean(text); el.hidden = !text; }
-  return { portrait: id => speakers[id] && speakers[id].cv, speaker, say, goal, toast, banner, card, hint, bindClick, get busy() { return busy; } };
+  return { rules, portrait: id => speakers[id] && speakers[id].cv, speaker, say, goal, toast, banner, card, hint, bindClick, get busy() { return busy; } };
 })();
