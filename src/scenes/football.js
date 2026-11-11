@@ -124,12 +124,12 @@ class DuelScene extends Phaser.Scene {
     const sprint = K.SHIFT.isDown && z.stam > .05 && (vx || vy);
     z.stam = Math.max(0, Math.min(1, z.stam + (sprint ? -.55 : .22) * dt));
     if (vx || vy) { const len = Math.hypot(vx, vy); z.fx = vx / len; z.fy = vy / len;
-      const sp = (sprint ? 96 : 64) * (b.owner === "zh" ? .88 : 1); z.x += z.fx * sp * dt; z.y += z.fy * sp * dt; z.t += dtMs;
+      const sp = (sprint ? 112 : 76) * (b.owner === "zh" ? .9 : 1); z.x += z.fx * sp * dt; z.y += z.fy * sp * dt; z.t += dtMs;
       z.dir = Math.abs(vx) >= Math.abs(vy) ? "side" : vy < 0 ? "back" : "front"; if (vx) z.flip = vx < 0; } else z.t = 0;
     z.x = Math.max(P.x + 4, Math.min(P.x + P.w - 4, z.x)); z.y = Math.max(P.y + 6, Math.min(P.y + P.h - 2, z.y));
     // удар: держим пробел — копим силу, отпускаем — бьём
     if (K.SPACE.isDown && b.owner === "zh") this.charge = Math.min(1, (this.charge < 0 ? 0 : this.charge) + dt * 1.4);
-    if (!K.SPACE.isDown && this.charge >= 0) { if (b.owner === "zh") this.kick(z.fx, z.fy, 130 + 210 * this.charge); this.charge = -1; }
+    if (!K.SPACE.isDown && this.charge >= 0) { if (b.owner === "zh") { const [kx, ky] = this.aim(vx, vy, z); this.kick(kx, ky, 130 + 210 * this.charge); } this.charge = -1; }
     // ---------- мяч ----------
     b.lock = Math.max(0, b.lock - dt);
     if (b.owner === "zh") { b.x = z.x + z.fx * 6; b.y = z.y + z.fy * 4 + 1; b.vx = b.vy = 0; }
@@ -141,19 +141,21 @@ class DuelScene extends Phaser.Scene {
       if (b.x > P.x + P.w) { if (inGoalY) return this.scored(); b.vx *= -.6; b.x = P.x + P.w; }
       if (b.x < P.x) { b.vx *= -.6; b.x = P.x; }
       if (!b.lock && Math.hypot(b.x - z.x, b.y - z.y) < 7 && !z.stun) { b.owner = "zh"; Sound.sfx("blip", .8); }
-      if (!b.lock && Math.hypot(b.x - l.x, b.y - l.y) < 10) {
-        const fast = Math.hypot(b.vx, b.vy) > 200 - this.lvl * 15;
-        if (fast) { b.vx = -b.vx * .5 + (Math.random() - .5) * 80; b.vy = b.vy * .5 + (Math.random() - .5) * 120; b.lock = .25; Sound.sfx("place"); UI.toast("Лера отбила!", 900); }
+      if (!b.lock && Math.hypot(b.x - l.x, b.y - l.y) < 7) {
+        const spd = Math.hypot(b.vx, b.vy), fast = spd > 170 - this.lvl * 12;
+        // сильный удар часто проходит мимо Леры: шанс отбить падает со скоростью мяча
+        if (fast && Math.random() > .75 - (spd - 170) / 400 + this.lvl * .08) { b.lock = .3; UI.toast("Лера не достала!", 800); }
+        else if (fast) { b.vx = -b.vx * .5 + (Math.random() - .5) * 80; b.vy = b.vy * .5 + (Math.random() - .5) * 120; b.lock = .25; Sound.sfx("place"); UI.toast("Лера отбила!", 900); }
         else { b.owner = "le"; l.hold = .35; Sound.sfx("place"); }
       }
     }
     // ---------- Лера (защитник) ----------
-    const lsp = 52 + this.lvl * 9; l.cd = Math.max(0, l.cd - dt);
+    const lsp = 42 + this.lvl * 6; l.cd = Math.max(0, l.cd - dt);
     const goalX = P.x + P.w, goalY = G.y + G.h / 2;
     if (b.owner === "le") {                                   // Лера выносит мяч влево
       l.hold -= dt; if (l.hold <= 0) { b.owner = null; const a = Math.PI + (Math.random() - .5) * 1.4; b.vx = Math.cos(a) * 230; b.vy = Math.sin(a) * 230; b.lock = .4; Sound.sfx("pick"); UI.toast(["Лера: Вынос!", "Лера: Не так быстро!", "Лера: Защита не дремлет!"][Math.floor(Math.random() * 3)], 1100); }
     } else if (l.dash > 0) {                                  // подкат
-      l.dash -= dt; l.x += l.dx * 165 * dt; l.y += l.dy * 165 * dt;
+      l.dash -= dt; l.x += l.dx * 140 * dt; l.y += l.dy * 140 * dt;
       if (b.owner === "zh" && Math.hypot(b.x - l.x, b.y - l.y) < 8) {
         b.owner = null; const a = Math.atan2(b.y - l.y, b.x - l.x) + Math.PI + (Math.random() - .5); b.vx = Math.cos(a) * 150 - 60; b.vy = Math.sin(a) * 150; b.lock = .35;
         z.stun = .55; Sound.sfx("wrong"); this.cameras.main.shake(150, .006); UI.toast("Подкат! Мяч отобран", 1100);
@@ -162,15 +164,22 @@ class DuelScene extends Phaser.Scene {
       // встаём между мячом и воротами, ближе к мячу; если мяч рядом и он у Жени — подкат
       let tx, ty, boost = 1;
       const tHit = !b.owner && b.vx > 50 ? (l.x - b.x) / b.vx : -1;
-      if (tHit > 0 && tHit < 1.5) { tx = l.x + 6; ty = b.y + b.vy * tHit; boost = 1.8 + this.lvl * .2; }   // удар по воротам: бросается наперерез
+      if (tHit > 0 && tHit < 1.5) { tx = l.x + 6; ty = b.y + b.vy * tHit; boost = 1.25 + this.lvl * .15; }   // удар по воротам: бросается наперерез
       else if (b.owner === "zh") { const d = Math.hypot(goalX - b.x, goalY - b.y) || 1, k = Math.min(26 - this.lvl * 3, d * .5); tx = b.x + (goalX - b.x) / d * k; ty = b.y + (goalY - b.y) / d * k; }
       else { tx = b.x + 4; ty = b.y; }                        // свободный мяч — бежим к нему
       const dx = tx - l.x, dy = ty - l.y, d = Math.hypot(dx, dy);
       if (d > 1) { l.x += dx / d * Math.min(d, lsp * boost * dt); l.y += dy / d * Math.min(d, lsp * boost * dt); l.t += dtMs; l.flip = dx < 0; } else l.t = 0;
       const db = Math.hypot(b.x - l.x, b.y - l.y);
-      if (b.owner === "zh" && db < 20 && l.cd <= 0 && Math.random() < dt * (2.2 + this.lvl * .8)) { l.dash = .22; l.dx = (b.x - l.x) / db; l.dy = (b.y - l.y) / db; l.cd = 1.5 - this.lvl * .25; Sound.sfx("step"); }
+      if (b.owner === "zh" && db < 20 && l.cd <= 0 && Math.random() < dt * (1.6 + this.lvl * .6)) { l.dash = .22; l.dx = (b.x - l.x) / db; l.dy = (b.y - l.y) / db; l.cd = 1.8 - this.lvl * .25; Sound.sfx("step"); }
     }
-    l.x = Math.max(P.x + 20, Math.min(P.x + P.w - 2, l.x)); l.y = Math.max(P.y + 6, Math.min(P.y + P.h - 2, l.y));
+    l.x = Math.max(P.x + 20, Math.min(P.x + P.w - 12, l.x)); l.y = Math.max(P.y + 6, Math.min(P.y + P.h - 2, l.y));
+  }
+  // Куда бить: по стрелкам, зажатым в момент удара; если ничего не зажато — куда Женя смотрит.
+  // Направление округляем до одного из 8 (→ ↗ ↑ ...), чтобы «почти вправо» было ровно вправо.
+  aim(vx, vy, z) {
+    let a = vx || vy ? Math.atan2(vy, vx) : Math.atan2(z.fy, z.fx);
+    a = Math.round(a / (Math.PI / 4)) * (Math.PI / 4);
+    return [Math.cos(a), Math.sin(a)];
   }
   kick(fx, fy, power) {
     const b = this.ball; b.owner = null; b.vx = fx * power; b.vy = fy * power; b.lock = .3; Sound.sfx("pick"); this.cameras.main.shake(80, .003);
