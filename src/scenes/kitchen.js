@@ -180,16 +180,11 @@ class KitchenScene extends Phaser.Scene {
       { who: "gi", text: "Женя! Ты... су-пер! Benvenuta in famiglia!" },
       { who: "na", text: "«Добро пожаловать в семью». Он редко так говорит. Ну, только когда его кормят." }
     ]);
-    await UI.card("Глава 1 пройдена", "Нарина и Джанлука ★", 3200);
-    this.end();
-  }
-  end() {
-    const el = document.getElementById("card"); el.hidden = false; el.classList.remove("show");
-    document.getElementById("ctitle").textContent = "Продолжение следует";
-    document.getElementById("csub").textContent = "Глава 2: Лера и футбол · Пробел — в главное меню";
-    const key = e => { if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); window.removeEventListener("keydown", key); el.hidden = true; this.scene.start("title"); } };
-    window.addEventListener("keydown", key);
-    this.events.once("shutdown", () => window.removeEventListener("keydown", key));
+    await UI.card("Глава 1 пройдена", "Нарина и Джанлука ★", 3000);
+    Save.store("run");
+    await UI.card("Глава 2", "Лера и футбол · на следующее утро", 2600);
+    this.cameras.main.fadeOut(700, 0, 0, 0);
+    this.time.delayedCall(750, () => this.scene.start("run"));
   }
   update() { this.na.update(); this.gi.update(); this.zh.update(); }
 }

@@ -9,7 +9,7 @@
     type: Phaser.AUTO, parent: "stage", width: 320, height: 180, zoom: z, pixelArt: true, roundPixels: true, backgroundColor: "#0d0b12",
     scale: { mode: Phaser.Scale.NONE },
     audio: { noAudio: true },                       // звук свой, через Sound
-    scene: [BootScene, TitleScene, HomeScene, PackScene, StationScene, RideScene, MilanScene, DuomoScene, KitchenScene]
+    scene: [BootScene, TitleScene, HomeScene, PackScene, StationScene, RideScene, MilanScene, DuomoScene, KitchenScene, RunScene, MatchScene, DuelScene]
   });
   window.addEventListener("resize", () => { const nz = zoomFor(); if (nz !== z) { z = nz; applyZoom(z); game.scale.setZoom(z); } });
   // Кнопка и клавиша звука
