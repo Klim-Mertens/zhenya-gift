@@ -30,16 +30,9 @@ class RideScene extends Phaser.Scene {
     ]);
     this.tweens.add({ targets: this, speed: 14, duration: 2500 });
     await w(1500);
-    Save.store("italy");
-    await UI.card("Италия", "Конец пролога · Глава 1 «Нарина и Джанлука» скоро", 4200);
-    this.end();
-  }
-  end() {
-    const el = document.getElementById("card"); el.hidden = false; el.classList.remove("show");
-    document.getElementById("ctitle").textContent = "Продолжение следует";
-    document.getElementById("csub").innerHTML = "Пробел — сыграть пролог заново";
-    const key = e => { if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); window.removeEventListener("keydown", key); el.hidden = true; Save.clear(); this.scene.start("title"); } };
-    window.addEventListener("keydown", key);
-    this.events.once("shutdown", () => window.removeEventListener("keydown", key));
+    Save.store("milan");
+    await UI.card("Глава 1", "Нарина и Джанлука", 3200);
+    this.cameras.main.fadeOut(900, 0, 0, 0);
+    this.time.delayedCall(950, () => this.scene.start("milan"));
   }
 }

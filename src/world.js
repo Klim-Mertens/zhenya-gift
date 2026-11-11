@@ -90,6 +90,25 @@ window.World = (() => {
   }
   const wait = (scene, ms) => new Promise(r => scene.time.delayedCall(ms, r));
   // Кадры героя → ключи текстур
+  // Спутник, который идёт следом за героем по его следам (lag — сколько шагов отстаёт)
+  function follower(scene, frames, leader, x, y, lag = 14) {
+    const spr = scene.add.image(x, y, frames.front[0]).setOrigin(.5, 1).setDepth(y), trail = [];
+    let last = [leader.spr.x, leader.spr.y];
+    return { spr, frames, override: null, t: 0, dir: "front", active: true,
+      update(dt) {
+        const lx = leader.spr.x, ly = leader.spr.y; let moved = false;
+        if (this.active && Math.hypot(lx - last[0], ly - last[1]) > .6) { trail.push([lx, ly]); last = [lx, ly]; }
+        if (this.active && trail.length > lag) { const [tx, ty] = trail.shift(), dx = tx - spr.x, dy = ty - spr.y;
+          if (Math.abs(dx) > Math.abs(dy) * 1.2) { this.dir = "side"; spr.setFlipX(dx < 0); } else if (Math.abs(dy) > .05) { this.dir = dy < 0 ? "back" : "front"; spr.setFlipX(false); }
+          spr.setPosition(tx, ty); moved = true; }
+        spr.setDepth(spr.y);
+        if (this.override) { spr.setTexture(this.override); return; }
+        if (moved) { this.t += dt; const list = this.frames[this.dir], f = Math.floor(this.t / 140) % 4; spr.setTexture(list.length === 3 ? list[[1, 0, 2, 0][f]] : list[f % 2]); }
+        else { const list = this.frames[this.dir]; const s = scene.time.now / 1000; spr.setTexture(this.dir === "front" && this.frames.blink && (s % 3.3) < .14 ? this.frames.blink : list[0]); }
+      },
+      reset() { trail.length = 0; last = [leader.spr.x, leader.spr.y]; }
+    };
+  }
   function frameKeys(prefix) { return { front: [0, 1, 2].map(i => `${prefix}_front_${i}`), back: [0, 1, 2].map(i => `${prefix}_back_${i}`), side: [0, 1].map(i => `${prefix}_side_${i}`), blink: `${prefix}_blink` }; }
-  return { backdrop, player, npc, interactions, walkTo, wait, frameKeys };
+  return { backdrop, player, npc, follower, interactions, walkTo, wait, frameKeys };
 })();

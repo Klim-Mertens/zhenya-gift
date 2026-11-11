@@ -138,5 +138,6 @@ window.People = (() => {
   function portrait(cv) {
     const p = PK.mk(16, 16); p.getContext("2d").drawImage(cv, 0, 0, 16, 16, 0, 0, 16, 16); return p;
   }
-  return { build, portrait };
+  const templates = () => ({ ZH_FRONT, ZH_BACK, ZH_SIDE, LEGS, SIDE_LEGS, ZH_PAL });
+  return { build, portrait, templates };
 })();
