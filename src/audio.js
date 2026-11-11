@@ -74,15 +74,22 @@ window.Sound = (() => {
       mel: [["G4", .5], ["C5", .5], ["E5", 1], ["D5", .5], ["C5", .5], ["A4", 1], ["G4", .5], ["A4", .5], ["C5", 1], ["D5", 2],
             ["E5", .5], ["G5", .5], ["E5", 1], ["D5", .5], ["C5", .5], ["D5", 1], ["E5", .5], ["D5", .5], ["C5", 1], ["C5", 2]],
       bass: oompa(["C", "F", "G", "C", "Am", "F", "G", "C"], 2) },
+    // Вокзал Милано Централе: неаполитанская серенада на мандолине (свой мотив)
+    centrale: { bpm: 100, lead: "triangle", mandolin: true, tamb: true, bell: false,
+      mel: [["D5", 1], ["B4", .5], ["C5", .5], ["D5", 1], ["G5", 1], ["F#5", .5], ["E5", .5], ["D5", 1], ["B4", 2],
+            ["C5", 1], ["E5", .5], ["D5", .5], ["C5", 1], ["A4", 1], ["B4", .5], ["C5", .5], ["D5", 1], ["G4", 2],
+            ["E5", 1], ["E5", .5], ["F#5", .5], ["G5", 1], ["E5", 1], ["D5", .5], ["C5", .5], ["B4", 1], ["D5", 2],
+            ["C5", .5], ["B4", .5], ["A4", 1], ["F#5", .5], ["E5", .5], ["D5", 1], ["A4", .5], ["B4", .5], ["F#4", 1], ["G4", 2]],
+      bass: oompa(["G", "G", "D", "G", "C", "Am", "D", "G", "C", "C", "G", "G", "Am", "D", "D", "G"], 2) },
     // Площадь Дуомо: быстрая «тарантелла» (свой мотив)
-    piazza: { bpm: 168, lead: "square", bell: false, drums: true,
-      mel: [["E5", .5], ["A5", .5], ["G5", .5], ["F5", .5], ["E5", .5], ["D5", .5], ["E5", 1], ["C5", .5], ["D5", .5], ["E5", 2],
-            ["D5", .5], ["F5", .5], ["E5", .5], ["D5", .5], ["C5", .5], ["B4", .5], ["C5", 1], ["A4", .5], ["B4", .5], ["C5", 2],
-            ["E5", .5], ["A5", .5], ["G5", .5], ["F5", .5], ["E5", .5], ["D5", .5], ["E5", 1], ["G5", .5], ["F5", .5], ["E5", 2],
-            ["D5", .5], ["C5", .5], ["B4", .5], ["C5", .5], ["D5", .5], ["B4", .5], ["A4", 1], ["E4", .5], ["G#4", .5], ["A4", 2]],
-      bass: oompa(["Am", "Am", "G", "C", "Dm", "Am", "E", "Am"], 2) },
+    piazza: { bpm: 168, lead: "square", accordion: true, tamb: true, bell: false, drums: true,
+      mel: [["E5", .5], ["A5", .5], ["G5", .5], ["F5", .5], ["E5", .5], ["D5", .5], ["E5", 1], ["C5", .5], ["D5", .5], ["E5", 3],
+            ["D5", .5], ["F5", .5], ["E5", .5], ["D5", .5], ["C5", .5], ["B4", .5], ["C5", 1], ["A4", .5], ["B4", .5], ["C5", 3],
+            ["E5", .5], ["A5", .5], ["G5", .5], ["F5", .5], ["E5", .5], ["D5", .5], ["E5", 1], ["G5", .5], ["F5", .5], ["E5", 3],
+            ["D5", .5], ["C5", .5], ["B4", .5], ["C5", .5], ["D5", .5], ["B4", .5], ["A4", 1], ["E4", .5], ["G#4", .5], ["A4", 3]],
+      bass: oompa(["Am", "Am", "G", "C", "Dm", "Am", "E", "Am"], 4) },
     // Кухня Нарины: тёплый мандолинный вальсок (свой мотив)
-    cucina: { bpm: 132, lead: "triangle", bell: true, drums: false,
+    cucina: { bpm: 132, lead: "triangle", mandolin: true, tamb: false, bell: false, drums: false,
       mel: [["C5", 1], ["F5", .5], ["A5", .5], ["G5", 1], ["F5", 1], ["E5", .5], ["F5", .5], ["G5", 1], ["C5", 2],
             ["D5", 1], ["G5", .5], ["A#5", .5], ["A5", 1], ["G5", 1], ["F5", .5], ["E5", .5], ["F5", 1], ["F5", 2]],
       bass: oompa(["F", "C", "C", "F", "Bb", "F", "C", "F"], 2) }
@@ -100,7 +107,17 @@ window.Sound = (() => {
       const horizon = (ctx.currentTime - start) / beat + 1.5;
       while (until < horizon) {
         const a = until, b = until + 1;
-        at(mel, a, b, (tt, n, d) => { const f = NOTE(n); tone(f, tt, d * beat * .9, { type: T.lead, vol: T.lead === "square" ? .08 : .12, bus: musicBus, release: .12 }); if (T.bell && f) tone(f * 2, tt, .25, { type: "sine", vol: .05, bus: musicBus, release: .35 }); });
+        at(mel, a, b, (tt, n, d) => { const f = NOTE(n), len = d * beat * .9; if (!f) return;
+          if (T.mandolin) {                                       // мандолина: быстрое «тремоло» одной нотой
+            const n = Math.max(1, Math.floor(len / .075)); for (let k = 0; k < n; k++) tone(f, tt + k * .075, .07, { type: "triangle", vol: k ? .075 : .12, bus: musicBus, release: .04 });
+            tone(f * 2, tt, .08, { type: "square", vol: .025, bus: musicBus, release: .05 });
+          } else if (T.accordion) {                               // аккордеон: два чуть расстроенных голоса с вибрато
+            tone(f, tt, len, { type: "square", vol: .05, bus: musicBus, vib: 3, attack: .02, release: .08 });
+            tone(f * 1.006, tt, len, { type: "sawtooth", vol: .035, bus: musicBus, vib: 3, attack: .02, release: .08 });
+            tone(f / 2, tt, len, { type: "triangle", vol: .04, bus: musicBus, attack: .02 });
+          } else tone(f, tt, len, { type: T.lead, vol: T.lead === "square" ? .08 : .12, bus: musicBus, release: .12 });
+          if (T.bell) tone(f * 2, tt, .25, { type: "sine", vol: .05, bus: musicBus, release: .35 }); });
+        if (T.tamb) for (let k = 0; k < 2; k++) { const tt = start + (a + k * .5) * beat; noise(tt, .05, { vol: k ? .03 : .06, bus: musicBus, hp: 6500 }); noise(tt + .02, .04, { vol: .02, bus: musicBus, hp: 8000 }); }
         at(bas, a, b, (tt, n, d) => tone(NOTE(n), tt, d * beat * .85, { type: "triangle", vol: .14, bus: musicBus, release: .1 }));
         if (T.drums) {                                            // бочка на сильные доли, хэт на слабые
           const kick = start + a * beat; if (a % 2 === 0) tone(90, kick, .12, { type: "sine", vol: .3, bus: musicBus, slide: .4 }); else noise(kick, .08, { vol: .12, bus: musicBus, hp: 1500 });

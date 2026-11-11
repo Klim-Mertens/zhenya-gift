@@ -6,7 +6,7 @@ class MilanScene extends Phaser.Scene {
   static GI_FRAMES = { front: ["gi_front_0", "gi_front_1", "gi_front_2"], back: ["gi_front_0", "gi_front_1", "gi_front_2"], side: ["gi_front_1", "gi_front_2"], blink: "gi_blink" };
   constructor() { super("milan"); }
   create() {
-    Save.store("milan"); Sound.play("summer"); UI.goal("");
+    Save.store("milan"); Sound.play("centrale"); UI.goal("");
     this.cameras.main.fadeIn(700, 0, 0, 0);
     const art = MilanoArt.centrale(), train = StationArt.create().train;
     this.sparkle = 0;

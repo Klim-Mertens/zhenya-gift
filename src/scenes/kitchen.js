@@ -15,7 +15,7 @@ class KitchenScene extends Phaser.Scene {
     this.na = World.npc(this, "na_front_0", "na_blink", 160, 104, .2);
     this.gi = World.npc(this, "gi_idle", "gi_blink", 252, 104, 1.1);
     this.zh = World.npc(this, "zh_summer_front_0", "zh_summer_blink", 60, 128, 2.3);
-    this.icons = Food.LIST.map(f => f);
+    this.icons = Food.LIST.map(f => Object.assign({}, f)); this.shuffle();
     this.input.on("pointermove", p => { const i = this.slotAt(p.worldX, p.worldY); if (i !== this.hover) { this.hover = i; UI.hint(i >= 0 && this.shelfOn ? this.icons[i].ru : ""); } });
     this.input.on("pointerdown", p => { if (!this.shelfOn || UI.busy) return; const i = this.slotAt(p.worldX, p.worldY); if (i >= 0) this.pick(i); });
     // ?scene=kitchen&feast — сразу к застолью (для проверки)
@@ -83,8 +83,11 @@ class KitchenScene extends Phaser.Scene {
     ]);
     await this.feast();
   }
+  // перемешать продукты на полке (каждый раунд по-новому)
+  shuffle() { const a = this.icons; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
   // одна серия просьб: ждём правильный клик на каждую
   round(who, ids, goalText) {
+    this.shuffle(); ids = ids.slice().sort(() => Math.random() - .5);   // и порядок просьб тоже случайный
     return new Promise(resolve => {
       let k = 0;
       const next = () => {
@@ -137,7 +140,7 @@ class KitchenScene extends Phaser.Scene {
     cam.fadeOut(300, 0, 0, 0); await World.wait(this, 320);
     this.na.spr.setPosition(122, 112); this.gi.spr.setPosition(200, 112); this.zh.spr.setPosition(161, 112);
     [this.na, this.gi, this.zh].forEach(o => o.spr.setDepth(o.spr.y));
-    Sound.play("summer");
+    Sound.play("piazza");
     cam.fadeIn(400, 0, 0, 0); await World.wait(this, 420);
     await UI.say([
       { who: "na", text: "Ну что, за стол! Долма, карбонара и мамин борщ. Интернациональный ужин!" },
