@@ -10,7 +10,7 @@ class BootScene extends Phaser.Scene {
     const P2 = People2.build();
     ["zh_summer", "na"].forEach(k => { const f = P2[k]; f.front.forEach((c, i) => add(`${k}_front_${i}`, c)); f.back.forEach((c, i) => add(`${k}_back_${i}`, c)); f.side.forEach((c, i) => add(`${k}_side_${i}`, c)); add(`${k}_blink`, f.blink); });
     add("na_show", P2.na.show);
-    P2.gi.front.forEach((c, i) => add(`gi_front_${i}`, c)); ["idle", "blink", "eyes", "wide", "shock"].forEach(n => add(`gi_${n}`, P2.gi[n]));
+    P2.gi.front.forEach((c, i) => add(`gi_front_${i}`, c)); ["idle", "blink", "eyes", "wide", "shock", "show"].forEach(n => add(`gi_${n}`, P2.gi[n]));
     Food.LIST.forEach(f => add(`food_${f.id}`, Food.icon(f))); ["dolma", "carbonara", "borsch"].forEach(k => add(`dish_${k}`, Food.dish(k)));
     Items.LIST.forEach(it => { add(`item_${it.id}_0`, Items.texture(it, false)); if (it.w !== it.h) add(`item_${it.id}_1`, Items.texture(it, true)); });
     UI.speaker("zh", "Женя", People.portrait(P.zh_home.front[0]), "#f2c46a");

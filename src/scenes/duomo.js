@@ -93,7 +93,7 @@ class DuomoScene extends Phaser.Scene {
     g.drawImage(this.bgSnap, 160 - pw / 4, 6, pw / 2, ph / 2, px, py, pw, ph);
     // герои ×3: Нарина (поцелуйчик), Женя, Джан в очках
     const src = key => this.textures.get(key).getSourceImage(), sc = 3, cw = 38;
-    [["na_front_0", px + 2], ["zh_summer_front_0", px + 2 + cw], ["gi_idle", px + 2 + cw * 2]].forEach(([key, x]) => g.drawImage(src(key), 0, 0, 16, 22, x, py + ph - 22 * sc + 2, 16 * sc, 22 * sc));
+    [["na_front_0", px + 2, 22], ["zh_summer_front_0", px + 2 + cw, 22], ["gi_idle", px + 2 + cw * 2, 25]].forEach(([key, x, h]) => g.drawImage(src(key), 0, 0, 16, h, x, py + ph - h * sc + 2, 16 * sc, h * sc));
     // губки Нарины «уточкой»
     R(g, px + 2 + 7 * sc, py + ph - 22 * sc + 2 + 11 * sc, 2 * sc, 2 * sc, "#d84a5a");
     RK.box(g, px - 1, py - 1, pw + 2, ph + 2, "#c8c0b0");

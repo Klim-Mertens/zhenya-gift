@@ -37,8 +37,8 @@ class MilanScene extends Phaser.Scene {
   fx(g, t) {
     if (!this.zh) return;
     const s = t / 1000;
-    if (this.sparkle > 0) { const sx = this.na.spr.x + 6, sy = this.na.spr.y - 12;
-      for (let i = 0; i < 6; i++) { const a = s * 3 + i, r = 3 + (i % 3) * 2, x = sx + Math.cos(a) * r, y = sy + Math.sin(a * 1.3) * r; if ((Math.floor(s * 8) + i) % 3) { PK.P(g, x, y, "#fff6a0"); PK.P(g, x + 1, y, "#f2c23a"); PK.P(g, x - 1, y, "#f2c23a"); PK.P(g, x, y - 1, "#f2c23a"); PK.P(g, x, y + 1, "#f2c23a"); } } }
+    if (this.sparkle > 0) [[this.na.spr.x + 6, this.na.spr.y - 12], [this.gi.spr.x - 7, this.gi.spr.y - 14]].forEach(([sx, sy]) => {
+      for (let i = 0; i < 6; i++) { const a = s * 3 + i, r = 3 + (i % 3) * 2, x = sx + Math.cos(a) * r, y = sy + Math.sin(a * 1.3) * r; if ((Math.floor(s * 8) + i) % 3) { PK.P(g, x, y, "#fff6a0"); PK.P(g, x + 1, y, "#f2c23a"); PK.P(g, x - 1, y, "#f2c23a"); PK.P(g, x, y - 1, "#f2c23a"); PK.P(g, x, y + 1, "#f2c23a"); } } });
     if (!this.summer && this.zh.spr.alpha > .5) { const sx = this.zh.spr.x, sy = this.zh.spr.y - 24;   // жарко в пуховике: капельки и пар
       for (let i = 0; i < 3; i++) { const ph = (s * .9 + i / 3) % 1; g.globalAlpha = 1 - ph; PK.P(g, sx - 7 + i * 7, sy + ph * 6, "#8ad0ff"); PK.P(g, sx - 7 + i * 7, sy + ph * 6 + 1, "#5ab0f0"); } g.globalAlpha = 1; }
   }
@@ -68,24 +68,25 @@ class MilanScene extends Phaser.Scene {
       { who: "na", text: "Потом покажем, он упадёт. Ой, Жень, смотри, что у меня есть!" }
     ]);
     await this.bracelet();
-    this.met = true;
+    this.met = true; this.zh.frozen = false;   // после катсцены снова можно ходить
     UI.goal("Идём к Дуомо: выход справа");
   }
   async bracelet() {
     const cam = this.cameras.main, ns = this.na.spr;
-    this.na.override = "na_show"; Sound.sfx("sparkle"); this.sparkle = 1;
-    cam.pan(ns.x + 8, ns.y - 14, 450, "Sine.easeInOut"); cam.zoomTo(3, 450, "Sine.easeInOut");
+    this.na.override = "na_show"; this.gi.override = "gi_show"; Sound.sfx("sparkle"); this.sparkle = 1;
+    cam.pan((ns.x + this.gi.spr.x) / 2, ns.y - 16, 450, "Sine.easeInOut"); cam.zoomTo(2.5, 450, "Sine.easeInOut");
     await World.wait(this, 500);
     await UI.say([
-      { who: "na", text: "Та-да! Джан подарил. Настоящее золото!" },
-      { who: "zhs", text: "Ого, какая красота! Блестит так, что из Коврова видно." },
+      { who: "na", text: "Та-да! Парные браслеты! У меня и у Джана одинаковые. Настоящее золото!" },
+      { who: "gi", text: "Sì! Uguali! Од-на-ко-вые!" },
+      { who: "zhs", text: "Ого, какая красота! Вы теперь как команда. Блестите так, что из Коврова видно!" },
       { who: "gi", text: "Per la mia regina!" },
       { who: "na", text: "Он говорит: «для моей королевы». Ну всё, я растаяла." },
       { who: "zhs", text: "Джан, научишь таким словам Лоренцо?" },
       { who: "gi", text: "Лоренцо? Ah, Lorenzo è un bravo ragazzo! Ma io... più romantico!" },
       { who: "na", text: "Говорит, Лоренцо хороший парень, но он сам романтичнее. Не спорь с ним, это бесполезно!" }
     ]);
-    this.sparkle = 0; this.na.override = null;
+    this.sparkle = 0; this.na.override = null; this.gi.override = null;
     cam.pan(160, 90, 500, "Sine.easeInOut"); cam.zoomTo(1, 500, "Sine.easeInOut");
     await World.wait(this, 520);
     await UI.say([

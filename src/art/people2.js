@@ -29,14 +29,14 @@ window.People2 = (() => {
     "................", "......oooo......", "....oSSSSSSo....", "...oSSSSSSlSo...", "..oSSSSSSSSlSo..",
     "..oSSSSSSSSSSo..", "..oSbbbSSbbbSo..", "..oSKKKKKKKKSo..", "..osKKKsSKKKso..", "..osSSSnnSSSso..",
     "..oddSmmmmSddo..", "..oddddrrddddo..", "...oddddddddo...", ".oTVTVWWWWVTVTo.", "oTVTVTWWWWTVTVTo",
-    "oTVTVTWgWWTVTVTo", "oSTVTVWWWWVTVTSo", "oSTVTVWWWWVTVTSo", "oSoTVTWWWWTVToGo", "oSoKKKKKKKKKKoSo",
+    "oTVTVTWgWWTVTVTo", "oTVTVTWWWWTVTVTo", "oSTVTVWWWWVTVTSo", "oSTVTVWWWWVTVTSo", "oYTVTVWWWWVTVTSo", "oSoTVTWWWWTVToGo", "oSoKKKKKKKKKKoSo",
     "..oKKKKKKKKKKo.."
   ];
   const GI_PAL = { o: "#2a1a18", S: "#e2ae86", s: "#c48a66", l: "#fff0dc", b: "#3a2a24", K: "#1c1a20", E: "#2a1a18", n: "#c48a66",
-    d: "#3a2a22", m: "#2a1e18", r: "#9c5a4c", T: "#b8a68c", V: "#f4f0e8", W: "#ffffff", g: "#e8c060", G: "#e8c060" };
-  const GI_LEGS = { stand: ["...oKKKooKKKo...", "...oKKKo.oKKKo..", "...oKKKo.oKKKo..", "...oWWWo.oWWWo..", "...ooooo.ooooo.."],
-    a: ["...oKKKooKKKo...", "...oKKKo.oKKKo..", "...oWWWo.oKKKo..", "...oooo..oWWWo..", "..........oooo.."],
-    b: ["...oKKKooKKKo...", "...oKKKo.oKKKo..", "...oKKKo.oWWWo..", "...oWWWo..oooo..", "...oooo........."] };
+    d: "#3a2a22", m: "#2a1e18", r: "#9c5a4c", T: "#b8a68c", V: "#f4f0e8", W: "#ffffff", g: "#e8c060", G: "#e8c060", Y: "#ffd84a" };
+  const GI_LEGS = { stand: ["...oKKKooKKKo...", "...oKKKo.oKKKo..", "...oKKKo.oKKKo..", "...oKKKo.oKKKo..", "...oWWWo.oWWWo..", "...ooooo.ooooo.."],
+    a: ["...oKKKooKKKo...", "...oKKKo.oKKKo..", "...oKKKo.oKKKo..", "...oWWWo.oKKKo..", "...oooo..oWWWo..", "..........oooo.."],
+    b: ["...oKKKooKKKo...", "...oKKKo.oKKKo..", "...oKKKo.oKKKo..", "...oKKKo.oWWWo..", "...oWWWo..oooo..", "...oooo........."] };
   // без очков (глаза видно) — для смешной реакции на водку
   const giEyes = (rows, wide) => rows.map((r, i) => i === 7 ? (wide ? "..oSWWWSSWWWSo.." : "..oSSESSSSESSo..") : i === 8 ? (wide ? "..osWEWSSWEWso.." : "..osSSSSSSSSso..") : r);
   const GI_RED = Object.assign({}, GI_PAL, { S: "#f08a6a", s: "#d06a4a", n: "#d06a4a" });
@@ -64,6 +64,9 @@ window.People2 = (() => {
     out.gi.idle = out.gi.front[0];
     out.gi.blink = sp(GI_TOP.map((r, i) => i === 3 ? "...oSSSSSSSSo..." : r).concat(GI_LEGS.stand), GI_PAL);   // блик на лысине «мигает»
     out.gi.eyes = sp(giEyes(GI_TOP, false).concat(GI_LEGS.stand), GI_PAL);
+    const gshow = PK.mk(16, out.gi.idle.height); { const g = gshow.getContext("2d"); g.drawImage(out.gi.idle, 0, 0); g.clearRect(0, 17, 2, 5);
+      PK.R(g, 0, 9, 2, 8, "#e2ae86"); PK.R(g, 0, 15, 2, 1, "#ffd84a"); PK.P(g, 1, 14, "#fff4a0"); PK.R(g, 0, 8, 2, 1, "#2a1a18"); PK.R(g, 2, 9, 1, 6, "#2a1a18"); }
+    out.gi.show = gshow;
     out.gi.wide = sp(giEyes(GI_TOP, true).concat(GI_LEGS.stand), GI_PAL);
     out.gi.shock = sp(giEyes(GI_TOP, true).concat(GI_LEGS.stand), GI_RED);
     return out;
