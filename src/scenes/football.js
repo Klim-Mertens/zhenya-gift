@@ -229,14 +229,11 @@ class DuelScene extends Phaser.Scene {
       { who: "le", text: "Вечером, кстати, у Даны танцы. Пойдём? Ты же любишь танцевать!" },
       { who: "zhs", text: "Ещё как! Только сначала джелато." }
     ]);
-    Save.store("duel");
+    Save.store("studio");
     await UI.card("Глава 2 пройдена", "Лера и футбол ★", 3000);
-    const el = document.getElementById("card"); el.hidden = false; el.classList.remove("show");
-    document.getElementById("ctitle").textContent = "Продолжение следует";
-    document.getElementById("csub").textContent = "Глава 3: танцы у Даны · Пробел — в главное меню";
-    const key = e => { if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); window.removeEventListener("keydown", key); el.hidden = true; this.scene.start("title"); } };
-    window.addEventListener("keydown", key);
-    this.events.once("shutdown", () => window.removeEventListener("keydown", key));
+    await UI.card("Глава 3", "Танцы у Даны · вечером", 2600);
+    this.cameras.main.fadeOut(600, 0, 0, 0);
+    this.time.delayedCall(650, () => this.scene.start("studio"));
   }
   draw(g, t) {
     const s = t / 1000, z = this.zh, l = this.le, b = this.ball, src = k => this.textures.get(k).getSourceImage(), R = PK.R;

@@ -97,6 +97,13 @@ window.Sound = (() => {
             ["E5", .5], ["A5", .5], ["G5", .5], ["F5", .5], ["E5", .5], ["D5", .5], ["E5", 1], ["G5", .5], ["F5", .5], ["E5", 3],
             ["D5", .5], ["C5", .5], ["B4", .5], ["C5", .5], ["D5", .5], ["B4", .5], ["A4", 1], ["E4", .5], ["G#4", .5], ["A4", 3]],
       bass: oompa(["Am", "Am", "G", "C", "Dm", "Am", "E", "Am"], 4) },
+    // Студия Даны: house 120 bpm (свой мотив), бочка на каждую долю; после 64-й доли добавляются шестнадцатые хэты
+    studio: { bpm: 120, lead: "square", house: true, bell: false,
+      mel: [["A4", .5], ["C5", .5], ["E5", .5], ["A5", .5], ["G5", 1], ["E5", 1], ["C5", .5], ["D5", .5], ["E5", 1], ["-", 2],
+            ["F5", .5], ["E5", .5], ["C5", .5], ["A4", .5], ["C5", 1], ["F5", 1], ["E5", .5], ["D5", .5], ["C5", 1], ["-", 2],
+            ["E5", .5], ["G5", .5], ["C6", .5], ["G5", .5], ["E5", 1], ["G5", 1], ["A5", .5], ["G5", .5], ["E5", 1], ["-", 2],
+            ["D5", .5], ["G5", .5], ["B5", .5], ["D6", .5], ["B5", 1], ["A5", 1], ["G5", .5], ["A5", .5], ["B5", 1], ["-", 2]],
+      bass: pulse(["Am", "F", "C", "G"], 8) },
     // Кухня Нарины: тёплый мандолинный вальсок (свой мотив)
     cucina: { bpm: 132, lead: "triangle", mandolin: true, tamb: false, bell: false, drums: false,
       mel: [["C5", 1], ["F5", .5], ["A5", .5], ["G5", 1], ["F5", 1], ["E5", .5], ["F5", .5], ["G5", 1], ["C5", 2],
@@ -110,7 +117,7 @@ window.Sound = (() => {
     const T = TRACKS[name], beat = 60 / T.bpm;
     const seq = (list) => { const out = []; let t = 0; list.forEach(([n, d]) => { out.push([t, n, d]); t += d; }); return { notes: out, len: t }; };
     const mel = seq(T.mel), bas = seq(T.bass), loop = Math.max(mel.len, bas.len);
-    const start = ctx.currentTime + .1; let until = 0;   // until — до какой доли уже всё запланировано
+    const start = ctx.currentTime + .1; let until = 0; track.start = start; track.beat = beat;   // until — до какой доли уже всё запланировано
     const at = (list, a, b, fn) => { for (let c = Math.floor(a / loop); c <= Math.floor(b / loop); c++) list.notes.forEach(([t, n, d]) => { const abs = c * loop + t; if (abs >= a && abs < b) fn(start + abs * beat, n, d); }); };
     const step = () => {
       const horizon = (ctx.currentTime - start) / beat + 1.5;
@@ -136,6 +143,12 @@ window.Sound = (() => {
           const tt = start + a * beat; tone(85, tt, .1, { type: "sine", vol: .32, bus: musicBus, slide: .4 });
           if (a % 2 === 1) noise(tt, .1, { vol: .16, bus: musicBus, hp: 1200 });
           for (let k = 0; k < 4; k++) noise(tt + k * beat / 4, .025, { vol: k === 2 ? .06 : .035, bus: musicBus, hp: 7000 });
+        }
+        if (T.house) {                                            // house: бочка каждую долю, хлопок на 2 и 4, открытый хэт между долями
+          const tt = start + a * beat; tone(60, tt, .16, { type: "sine", vol: .36, bus: musicBus, slide: .5 });
+          if (a % 2 === 1) { noise(tt, .09, { vol: .13, bus: musicBus, hp: 1500 }); noise(tt + .012, .07, { vol: .09, bus: musicBus, hp: 2500 }); }
+          noise(tt + beat / 2, .07, { vol: .06, bus: musicBus, hp: 7500 });
+          if (a >= 64) for (let k = 1; k < 4; k += 2) noise(tt + k * beat / 4, .02, { vol: .03, bus: musicBus, hp: 9000 });
         }
         if (T.sleigh) for (let k = 0; k < 4; k++) noise(start + (a + k * .25) * beat, .035, { vol: k % 2 ? .025 : .045, bus: musicBus, hp: 7000 });
         if (T.clack) { noise(start + a * beat, .04, { vol: .09, bus: musicBus, hp: 2000 }); noise(start + (a + .5) * beat, .04, { vol: .05, bus: musicBus, hp: 2000 }); }
@@ -181,5 +194,7 @@ window.Sound = (() => {
   };
   function sfx(name, arg) { if (ctx && SFX[name]) SFX[name](arg); }
   function toggleMute() { muted = !muted; if (master) master.gain.value = muted ? 0 : .7; return muted; }
-  return { unlock, play, stopMusic, sfx, toggleMute, get muted() { return muted; } };
+  // сколько долей прошло с начала текущей музыки (для ритм-игры); null — если звука нет
+  const beatNow = () => (ctx && track && track.start != null ? (ctx.currentTime - track.start) / track.beat : null);
+  return { beatNow, unlock, play, stopMusic, sfx, toggleMute, get muted() { return muted; } };
 })();
