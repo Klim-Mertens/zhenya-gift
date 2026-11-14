@@ -41,7 +41,7 @@ window.ParkArt = (() => {
     };
   }
   // ---------- футбольное поле (вид сверху) ----------
-  const PITCH = { x: 14, y: 30, w: 292, h: 140 }, GOAL = { y: 82, h: 36 };
+  const PITCH = { x: 14, y: 30, w: 292, h: 140 }, GOAL = { y: 76, h: 48 };
   function pitch(withStands) {
     const cv = PK.mk(W, H), g = cv.getContext("2d"), rnd = PK.rng(19), p = PITCH;
     R(g, 0, 0, W, H, "#3a7a3a");

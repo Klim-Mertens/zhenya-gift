@@ -132,13 +132,18 @@ class DuelScene extends Phaser.Scene {
     if (!K.SPACE.isDown && this.charge >= 0) { if (b.owner === "zh") { const [kx, ky] = this.aim(vx, vy, z); this.kick(kx, ky, 130 + 210 * this.charge); } this.charge = -1; }
     // ---------- мяч ----------
     b.lock = Math.max(0, b.lock - dt);
-    if (b.owner === "zh") { b.x = z.x + z.fx * 6; b.y = z.y + z.fy * 4 + 1; b.vx = b.vy = 0; }
+    if (b.owner === "zh") { b.x = z.x + z.fx * 6; b.y = z.y + z.fy * 4 + 1; b.vx = b.vy = 0;
+      if (b.x >= P.x + P.w && b.y > G.y && b.y < G.y + G.h) return this.scored(); }   // занесла мяч в ворота
     else if (b.owner === "le") { b.x = l.x - 6; b.y = l.y + 1; }
     else {
       b.x += b.vx * dt; b.y += b.vy * dt; const fr = Math.pow(.22, dt); b.vx *= fr; b.vy *= fr;
       if (b.y < P.y + 2 || b.y > P.y + P.h - 2) { b.vy *= -.7; b.y = Math.max(P.y + 2, Math.min(P.y + P.h - 2, b.y)); }
-      const inGoalY = b.y > G.y && b.y < G.y + G.h;
-      if (b.x > P.x + P.w) { if (inGoalY) return this.scored(); b.vx *= -.6; b.x = P.x + P.w; }
+      if (b.x >= P.x + P.w) {
+        // где мяч пересёк линию ворот (точка на линии, а не после шага), со штангами в запас 2 px
+        const k = b.vx > 0 ? (b.x - (P.x + P.w)) / (b.vx * dt) : 0, yCross = b.y - b.vy * dt * Math.min(1, k);
+        if (yCross > G.y - 2 && yCross < G.y + G.h + 2) return this.scored();
+        return this.missed();
+      }
       if (b.x < P.x) { b.vx *= -.6; b.x = P.x; }
       if (!b.lock && Math.hypot(b.x - z.x, b.y - z.y) < 7 && !z.stun) { b.owner = "zh"; Sound.sfx("blip", .8); }
       if (!b.lock && Math.hypot(b.x - l.x, b.y - l.y) < 7) {
@@ -179,7 +184,20 @@ class DuelScene extends Phaser.Scene {
   aim(vx, vy, z) {
     let a = vx || vy ? Math.atan2(vy, vx) : Math.atan2(z.fy, z.fx);
     a = Math.round(a / (Math.PI / 4)) * (Math.PI / 4);
+    // Автоприцел: если удар направлен вправо (→, ↗ или ↘), а ворота почти по пути, доворачиваем мяч в створ.
+    // Иначе по маленьким воротам с клавиатуры почти не попасть.
+    const P = ParkArt.PITCH, G = ParkArt.GOAL, gx = P.x + P.w, b = this.ball;
+    if (Math.cos(a) > .5 && b.x < gx) {
+      const top = Math.atan2(G.y + 6 - b.y, gx - b.x), bot = Math.atan2(G.y + G.h - 6 - b.y, gx - b.x);
+      if (a > top - .6 && a < bot + .6) a = Math.max(top, Math.min(bot, a));
+    }
     return [Math.cos(a), Math.sin(a)];
+  }
+  // мимо ворот: мяч у Леры, она выбивает
+  missed() {
+    const b = this.ball, l = this.le; UI.toast("Мимо ворот! Удар от ворот", 1100); Sound.sfx("wrong");
+    l.x = ParkArt.PITCH.x + ParkArt.PITCH.w - 14; l.y = ParkArt.GOAL.y + ParkArt.GOAL.h / 2; l.dash = 0;
+    b.owner = "le"; b.vx = b.vy = 0; l.hold = .6;
   }
   kick(fx, fy, power) {
     const b = this.ball; b.owner = null; b.vx = fx * power; b.vy = fy * power; b.lock = .3; Sound.sfx("pick"); this.cameras.main.shake(80, .003);
