@@ -86,7 +86,7 @@ class DriveScene extends Phaser.Scene {
     });
     this.obs = this.obs.filter(o => o.d > this.dist - 80 && o.d < this.dist + 400 && !(o.type === "goat" && o.xo > this.L.w / 2 + 30));
     // цветы
-    this.flowers.forEach(f => { if (f.taken) return; const fx = this.cx(f.d) + f.side * (this.L.w / 2 - 6), fy = this.CY - (f.d - this.dist);
+    this.flowers.forEach(f => { if (f.taken) return; const fx = this.cx(f.d) + f.side * (this.L.w / 2 - 20), fy = this.CY - (f.d - this.dist);
       if (Math.abs(fx - this.x) < 9 && Math.abs(fy - this.CY) < 12) { f.taken = true; this.got++; Sound.sfx("sparkle"); } });
     UI.goal(`До вершины: ${Math.max(0, Math.round((this.D - this.dist) / 52))} м · цветов: ${this.got}`);
     if (this.dist >= this.D) this.finish();
@@ -129,7 +129,7 @@ class DriveScene extends Phaser.Scene {
     }
     // цветы у обочины
     this.flowers.forEach(f => { if (f.taken) return; const y = CY - (f.d - this.dist); if (y < -10 || y > 190) return;
-      g.drawImage(im.flowers[f.col], Math.round(this.cx(f.d) + f.side * (w / 2 - 6)) - 3, Math.round(y) - 3); });
+      g.drawImage(im.flowers[f.col], Math.round(this.cx(f.d) + f.side * (w / 2 - 20)) - 3, Math.round(y) - 3); });
     // препятствия
     this.obs.forEach(o => { const y = CY - (o.d - this.dist), x = this.cx(o.d) + o.xo; if (y < -20 || y > 200) return;
       const img = o.type === "goat" ? im.goat[Math.floor(o.f * 6) % 2] : o.type === "cyclist" ? im.cyclist[Math.floor(s * 6) % 2] : im.vespa;
