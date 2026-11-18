@@ -152,16 +152,24 @@ class DriveScene extends Phaser.Scene {
   }
 }
 
+// рисует букет 11×12: стебли, розовая бумага, пять цветков
+function R_(g) { const R = PK.R;
+  R(g, 5, 7, 1, 4, "#3a7a2a"); PK.poly(g, [[1, 6], [10, 6], [6, 12], [5, 12]], "#f0a0c0"); R(g, 4, 9, 3, 1, "#e8607a"); R(g, 1, 6, 9, 1, "#f8d8e8");
+  [[2, 3, "#ff5a7a"], [5, 1, "#f4f0e8"], [8, 3, "#ff9ad0"], [4, 4, "#f2d23a"], [7, 5, "#b08ae0"]].forEach(([x, y, c]) => { R(g, x - 1, y - 1, 3, 3, c); R(g, x, y, 1, 1, "#fff4a0"); }); }
 class SunsetScene extends Phaser.Scene {
   constructor() { super("sunset"); }
   init(data) { this.flowers = (data && data.flowers) || 0; }
   create() {
     Save.store("sunset"); Sound.play("centrale"); UI.goal(""); UI.hint("");
     this.cameras.main.fadeIn(900, 255, 200, 140);
-    this.bg = LorenzoArt.summit(); this.hearts = []; this.bouquet = false;
+    this.bg = LorenzoArt.summit(); this.hearts = []; this.bq = null;
     World.backdrop(this, "sun_bg", (g, t) => this.draw(g, t), -1000);
     this.zh = World.npc(this, "zh_summer_front_0", "zh_summer_blink", 138, 124, .3);
     this.lo = World.npc(this, "lo_front_0", "lo_blink", 176, 124, 1.4);
+    // букет — отдельная картинка поверх персонажей (чтобы его было видно)
+    if (!this.textures.exists("bouquet")) { const cv = PK.mk(11, 12), g = cv.getContext("2d");
+      R_(g); this.textures.addCanvas("bouquet", cv); }
+    this.bqImg = this.add.image(0, 0, "bouquet").setOrigin(.5, 1).setDepth(900).setVisible(false);
     this.time.delayedCall(1000, () => this.story());
   }
   async story() {
@@ -169,14 +177,27 @@ class SunsetScene extends Phaser.Scene {
     await UI.say([
       { who: "lo", text: "Успели! Смотри, amore..." },
       { who: "zhs", text: "Какая красота... Озеро как будто горит." },
-      this.flowers ? { who: "zhs", text: `А я по дороге собрала полевые цветы, ${this.flowers} шт. Держи, это тебе!` } : { who: "lo", text: "Тихо как... Только кузнечики." },
-      { who: "lo", text: this.flowers ? "Ха! Ты меня опередила. Но у меня тоже кое-что есть..." : "Подожди, у меня для тебя кое-что есть..." }
+      { who: "lo", text: "Подожди, у меня для тебя кое-что есть. Закрой глаза..." }
     ]);
-    // букет
-    this.bouquet = true; Sound.sfx("sparkle");
+    // вручение букета: Лоренцо достаёт его из-за спины, камера наезжает, он подходит и отдаёт Жене
+    this.bq = this.bqImg; this.bq.setPosition(this.lo.spr.x - 8, this.lo.spr.y - 6).setScale(1.5).setVisible(true); Sound.sfx("sparkle");
+    cam.pan(152, 118, 800, "Sine.easeInOut"); cam.zoomTo(2.2, 800, "Sine.easeInOut"); await World.wait(this, 900);
+    UI.toast("Лоренцо достаёт букет", 1600); await World.wait(this, 900);
+    this.tweens.add({ targets: this.lo.spr, x: 156, duration: 900, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: this.bq, x: 148, duration: 900, ease: "Sine.easeInOut" });
+    await World.wait(this, 1000);
+    this.tweens.add({ targets: this.bq, scale: 2.2, duration: 300, yoyo: true }); Sound.sfx("sparkle");
     await UI.say([
-      { who: "lo", text: "Это тебе. Просто так. Потому что ты — это ты." },
-      { who: "zhs", text: "Лоренцо... Спасибо. Это лучший вечер." }
+      { who: "lo", text: this.flowers ? `Ты собрала по дороге ${this.flowers} цветов, пока рулила. Я сложил их в букет. Держи, это тебе!` : "Это тебе. Просто так. Потому что ты — это ты." }
+    ]);
+    // букет переходит из рук Лоренцо в руки Жени
+    const zs = this.zh.spr;
+    this.tweens.add({ targets: this.bq, x: zs.x + 8, y: zs.y - 6, scale: 1.2, duration: 900, ease: "Sine.easeInOut" });
+    await World.wait(this, 700); Sound.sfx("done");
+    for (let i = 0; i < 5; i++) this.hearts.push({ x: zs.x + 4 + i * 3, y: zs.y - 30 - i * 2, t: 0, s: 1 });
+    await World.wait(this, 500); this.bq.held = true;
+    await UI.say([
+      { who: "zhs", text: "Лоренцо... Какие красивые! Спасибо. Это лучший вечер." }
     ]);
     // поцелуй: подходят ближе, камера приближается, сердечки
     this.tweens.add({ targets: this.zh.spr, x: 150, duration: 900, ease: "Sine.easeInOut" });
@@ -232,13 +253,10 @@ class SunsetScene extends Phaser.Scene {
     g.drawImage(this.bg, 0, 0);
     // солнце медленно садится, блики на озере
     for (let k = 0; k < 8; k++) R(g, 170 + ((k * 23 + Math.floor(s * 6)) % 90), 108 + (k * 3) % 8, 6, 1, "#fff4c8");
-    // букет в руках у Лоренцо, потом у Жени
-    if (this.bouquet && this.lo) { const sp = this.zh.spr, x = Math.round(sp.x + 5), y = Math.round(sp.y - 12);
-      R(g, x, y, 1, 6, "#3a7a2a"); R(g, x + 2, y, 1, 6, "#3a7a2a"); [[x - 1, y - 2, "#ff5a7a"], [x + 2, y - 3, "#f4f0e8"], [x + 4, y - 1, "#ff9ad0"], [x + 1, y - 1, "#f2d23a"]].forEach(([a, b, c]) => R(g, a, b, 2, 2, c)); }
     // сердечки
     this.hearts.forEach(h => { h.t += 1 / 60; h.y -= .35; const a = Math.max(0, 1 - h.t / 2.2); if (!a) return; g.save(); g.globalAlpha = a;
       ["01100110", "11111111", "11111111", "01111110", "00111100", "00011000"].forEach((row, yy) => [...row].forEach((b, xx) => { if (b === "1") R(g, Math.round(h.x + xx * h.s / 2), Math.round(h.y + yy * h.s / 2), 1, 1, "#ff5a7a"); }));
       g.restore(); });
   }
-  update() { this.zh.update(); this.lo.update(); }
+  update() { this.zh.update(); this.lo.update(); if (this.bq && this.bq.held) this.bq.setPosition(this.zh.spr.x + 8, this.zh.spr.y - 6); }
 }
