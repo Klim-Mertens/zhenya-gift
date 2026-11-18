@@ -26,9 +26,11 @@ class BootScene extends Phaser.Scene {
     UI.speaker("na", "Нарина", People.portrait(P2.na.front[0]), "#e8a07a");
     UI.speaker("gi", "Джанлука", People.portrait(P2.gi.idle), "#7ac8a0");
     UI.speaker("da", "Дана", People.portrait(DanceArt.dana().front[0]), "#ff7ac0");
+    const LO = LorenzoArt.build(); LO.front.forEach((c, i) => add(`lo_front_${i}`, c)); add("lo_blink", LO.blink);
+    UI.speaker("lo", "Лоренцо", People.portrait(LO.front[0]), "#7ab0ff");
     UI.speaker("le", "Лера", People.portrait(P3.le_run.front[0]), "#8ab8f0");
     // ?scene=home|pack|station|ride — для проверки отдельных сцен
     const q = new URLSearchParams(location.search).get("scene");
-    this.scene.start(q && ["home", "pack", "station", "ride", "milan", "duomo", "kitchen", "run", "match", "duel", "street", "studio"].includes(q) ? q : "title");
+    this.scene.start(q && ["home", "pack", "station", "ride", "milan", "duomo", "kitchen", "run", "match", "duel", "street", "studio", "drive", "sunset"].includes(q) ? q : "title");
   }
 }

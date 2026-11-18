@@ -155,12 +155,8 @@ class StudioScene extends Phaser.Scene {
     ]);
     Save.store("studio");
     await UI.card("Глава 3 пройдена", "Танцы у Даны ★", 3000);
-    const el = document.getElementById("card"); el.hidden = false; el.classList.remove("show");
-    document.getElementById("ctitle").textContent = "Продолжение следует";
-    document.getElementById("csub").textContent = "Глава 4: закат с Лоренцо · Пробел — в главное меню";
-    const key = e => { if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); window.removeEventListener("keydown", key); el.hidden = true; this.scene.start("title"); } };
-    window.addEventListener("keydown", key);
-    this.events.once("shutdown", () => window.removeEventListener("keydown", key));
+    await UI.card("Глава 4", "Закат с Лоренцо", 2600);
+    this.scene.start("drive");
   }
   // ---------- отрисовка ----------
   draw(g, t) {
