@@ -32,6 +32,16 @@ class StudioScene extends Phaser.Scene {
     this.events.once("shutdown", () => window.removeEventListener("keydown", kd));
     this.time.delayedCall(700, () => this.intro());
   }
+  // ---------- уровни сложности: после каждой неудачи Дана упрощает танец ----------
+  // win — окна попадания в секундах (СУПЕР / ОТЛИЧНО / НОРМ), need — нужная точность, gap — минимум долей между стрелками
+  static LEVELS = [
+    { name: "Уровень 1", win: [.06, .11, .18], need: .6, pxb: 58, gap: 0, chords: true },
+    { name: "Уровень 2 · проще", win: [.07, .13, .21], need: .55, pxb: 54, gap: 1, chords: true },
+    { name: "Уровень 3 · ещё проще", win: [.08, .15, .24], need: .5, pxb: 50, gap: 1, chords: false },
+    { name: "Уровень 4 · лёгкий", win: [.1, .18, .28], need: .45, pxb: 46, gap: 2, chords: false },
+    { name: "Уровень 5 · самый лёгкий", win: [.12, .2, .32], need: .35, pxb: 42, gap: 4, chords: false }
+  ];
+  get L() { return StudioScene.LEVELS[Math.min(this.fails, StudioScene.LEVELS.length - 1)]; }
   // ---------- карта стрелок (одинаковая каждый раз) ----------
   chart() {
     const rnd = PK.rng(24), notes = [], L = "left", Dn = "down", U = "up", Rt = "right";
@@ -49,7 +59,10 @@ class StudioScene extends Phaser.Scene {
       if (bar % 4 === 3) { add(b0, Dn); add(b0 + 1, U); add(b0 + 2, L, Rt); continue; }
       B[Math.floor(rnd() * B.length)].forEach(([o, d]) => add(b0 + o, d)); }
     add(120, L, Rt);                                           // финальная поза
-    return notes;
+    // упрощение под уровень: убираем восьмые, близкие стрелки, двойные
+    const lv = this.L; let last = -99;
+    return notes.filter(n => { if (lv.gap && (n.b % 1 || n.b - last < lv.gap)) return false; last = n.b; return true; })
+      .map(n => lv.chords ? n : Object.assign(n, { dirs: [n.dirs[0]] }));
   }
   async intro() {
     await UI.say([
@@ -65,8 +78,8 @@ class StudioScene extends Phaser.Scene {
       { keys: ["←", "↓", "↑", "→"], icons: [a.leftfill, a.downfill, a.upfill, a.rightfill], text: "Стрелки летят снизу вверх. Когда стрелка попадает в рамку наверху — жми ту же стрелку (или A S W D)." },
       { icons: [a.leftfill, a.rightfill], text: "Две стрелки рядом — жми обе сразу: это поза-рамка, как в Vogue." },
       { icons: [pose("left"), pose("up"), pose("frame")], text: "Дана заранее показывает следующее движение, Женя повторяет за ней, когда ты нажимаешь." },
-      { text: "Точно в такт — «СУПЕР!», чуть раньше или позже — «ОТЛИЧНО» или «НОРМ». Набери точность 60% (шкала внизу справа)." },
-      { text: "Две части: Vogue (спокойнее), потом High Heels (быстрее). Не получилось — попробуешь ещё раз." }
+      { text: "Точно в такт — «СУПЕР!», чуть раньше или позже — «ОТЛИЧНО» или «НОРМ». Набери точность 60% (белая черта на шкале внизу справа)." },
+      { text: "Две части: Vogue (спокойнее), потом High Heels (быстрее). Не получилось — Дана сделает танец проще, и так после каждой попытки." }
     ]);
     this.startSong();
   }
@@ -80,10 +93,10 @@ class StudioScene extends Phaser.Scene {
   hit(d) {
     const now = this.beat(), sec = x => x / 2;                 // 120 bpm: одна доля = 0,5 с
     this.press[d] = .12;
-    const n = this.notes.find(n => !n.done && n.dirs.includes(d) && !n.got[d] && Math.abs(sec(n.b - now)) <= .18);
+    const n = this.notes.find(n => !n.done && n.dirs.includes(d) && !n.got[d] && Math.abs(sec(n.b - now)) <= this.L.win[2]);
     if (!n) { this.setZh(d === "left" ? "left" : d === "right" ? "right" : d); return; }   // лишнее нажатие: просто движение, без штрафа
     const err = Math.abs(sec(n.b - now));
-    n.got[d] = err <= .06 ? 3 : err <= .11 ? 2 : 1;
+    const W = this.L.win; n.got[d] = err <= W[0] ? 3 : err <= W[1] ? 2 : 1;
     if (n.dirs.every(x => n.got[x])) this.judge(n, Math.min(...n.dirs.map(x => n.got[x])));
     else this.setZh(d);
   }
@@ -107,7 +120,7 @@ class StudioScene extends Phaser.Scene {
     if (this.state !== "play") return;
     const now = this.beat();
     // пропущенные стрелки
-    this.notes.forEach(n => { if (!n.done && (n.b - now) / 2 < -.18) this.judge(n, 0); });
+    this.notes.forEach(n => { if (!n.done && (n.b - now) / 2 < -this.L.win[2]) this.judge(n, 0); });
     // Дана показывает позу ближайшей стрелки
     const next = this.notes.find(n => !n.done && n.b > now - .1);
     this.daPose = !next || next.b - now > 1.2 ? "hip" : next.dirs.length > 1 ? "frame" : next.dirs[0];
@@ -115,19 +128,19 @@ class StudioScene extends Phaser.Scene {
     const cue = (b, text) => { if (now >= b && !this.cues[b]) { this.cues[b] = 1; UI.toast(text, 1600); } };
     cue(3, "Дана: Пять, шесть, семь, восемь!"); cue(20, "Дана: Руки длинные! Как на подиуме!"); cue(38, "Дана: Рамка! Лицо в кадре!");
     cue(57, "Дана: А теперь High Heels! Быстрее!"); cue(84, "Дана: Бёдра! Уверенно!"); cue(104, "Лера: Женя, огонь!!!");
-    UI.goal(`${now < 60 ? "Vogue" : "High Heels"} · точность ${Math.round(this.acc * 100)}% · комбо ${this.combo}`);
+    UI.goal(`${this.L.name} · ${now < 60 ? "Vogue" : "High Heels"} · точность ${Math.round(this.acc * 100)}% · комбо ${this.combo}`);
     if (now > 122 && this.notes.every(n => n.done)) this.finish();
   }
   async finish() {
     this.state = "end"; UI.goal("");
-    const acc = this.acc, need = this.fails >= 3 ? .3 : this.fails >= 2 ? .45 : .6, pct = Math.round(acc * 100);
+    const acc = this.acc, need = this.L.need, pct = Math.round(acc * 100);
     const grade = acc >= .92 ? "S" : acc >= .8 ? "A" : acc >= .68 ? "B" : "C";
     Sound.play("summer");
     if (acc < need) {
       this.fails++; Sound.sfx("wrong");
       await UI.say([
         { who: "da", text: `${pct}% — неплохо для первого раза! Но я знаю, ты можешь лучше.` },
-        { who: "da", text: this.fails >= 2 ? "Давай ещё раз. Смотри на мои руки: я показываю движение чуть раньше стрелки." : "Ещё разок! Слушай бочку в музыке: стрелки приходят ровно на удар." }
+        { who: "da", text: `Сделаем чуть проще. ${this.L.name}: ${this.fails === 1 ? "убираю быстрые шаги" : this.fails === 2 ? "ещё меньше движений, без двойных поз" : "медленно и спокойно, только главные движения"}. Слушай бочку: стрелки приходят ровно на удар!` }
       ]);
       for (const n of ["3", "2", "1"]) { UI.banner(`<div class="syl"><span>${n}</span></div>`, "chant", 600); Sound.sfx("blip", 1.6); await World.wait(this, 650); }
       this.startSong(); return;
@@ -175,13 +188,13 @@ class StudioScene extends Phaser.Scene {
       if (this.press[d] > 0) { g.save(); g.globalAlpha = .25; R(g, this.LX + i * this.LW, 0, this.LW, 180, DanceArt.COLORS[d]); g.restore(); }
       g.drawImage(this.arrows[d + "ring"], x, this.HIT_Y - 7 + (this.press[d] > 0 ? 1 : 0)); });
     if (playing && this.notes) {
-      for (const n of this.notes) { if (n.done && n.q) continue; const y = this.HIT_Y + (n.b - now) * this.PXB; if (y > 186 || y < -14) continue;
+      for (const n of this.notes) { if (n.done && n.q) continue; const y = this.HIT_Y + (n.b - now) * this.L.pxb; if (y > 186 || y < -14) continue;
         if (n.dirs.length > 1) { const xs = n.dirs.map(d => this.LX + this.LANES.indexOf(d) * this.LW + this.LW / 2); R(g, Math.min(...xs), Math.round(y), Math.max(...xs) - Math.min(...xs), 1, "#ffffff"); }
         n.dirs.forEach(d => { if (n.got[d]) return; const x = this.LX + this.LANES.indexOf(d) * this.LW + (this.LW - 14) / 2; g.save(); if (n.done) g.globalAlpha = .35; g.drawImage(this.arrows[d + "fill"], x, Math.round(y - 7)); g.restore(); }); }
     }
     this.fx.filter(f => f.glow).forEach(f => { const i = this.LANES.indexOf(f.glow), x = this.LX + i * this.LW + (this.LW - 14) / 2; g.save(); g.globalAlpha = 1 - f.t / .6; g.drawImage(this.arrows[f.glow + "glow"], x, this.HIT_Y - 7 - f.t * 8); g.restore(); });
     // шкала точности с отметкой «нужно»
-    const bx = this.LX, bw = this.LW * 4, need = this.fails >= 3 ? .3 : this.fails >= 2 ? .45 : .6, acc = this.notes ? this.acc : 1;
+    const bx = this.LX, bw = this.LW * 4, need = this.L.need, acc = this.notes ? this.acc : 1;
     R(g, bx, 172, bw, 4, "#3a3048"); R(g, bx, 172, bw * acc, 4, acc >= need ? "#5ad86a" : "#e84a4a"); R(g, bx + bw * need, 170, 1, 8, "#ffffff"); RK.box(g, bx - 1, 171, bw + 2, 6, RK.OL);
     // прогресс песни
     if (playing) R(g, bx, 168, bw * Math.max(0, Math.min(1, now / 121)), 1, "#f2c23a");

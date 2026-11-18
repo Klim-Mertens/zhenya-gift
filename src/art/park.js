@@ -17,27 +17,36 @@ window.ParkArt = (() => {
     return cv;
   }
   function tree(g, x, y, s, c1, c2) { R(g, x - 1, y - 10 * s, 3, 10 * s, "#6a4a32"); PK.ell(g, x, y - 14 * s, 9 * s, 8 * s, c1); PK.ell(g, x - 2 * s, y - 16 * s, 5 * s, 4 * s, c2); }
+  // Слой-полоса для параллакса: рисуем один период заранее, потом только сдвигаем картинку (быстро).
+  // items(put) вызывает put(x, fn) для каждого объекта; объект рисуется и у правого края, чтобы стык был незаметен.
+  function strip(period, h, y0, items) {
+    const cv = PK.mk(period, h), g = cv.getContext("2d"); g.translate(0, -y0);
+    items((x, fn) => { fn(g, x); fn(g, x - period); fn(g, x + period); });
+    return (ctx, off) => { const o = Math.round(wrap(off, period)); ctx.drawImage(cv, -o, y0); ctx.drawImage(cv, period - o, y0); if (2 * period - o < W) ctx.drawImage(cv, 2 * period - o, y0); };
+  }
   function sempione() {
     const cs = castle();
+    // небо с солнцем — статично, рисуем один раз
+    const sky = PK.mk(W, 112); { const g = sky.getContext("2d"); PK.gradV(g, 0, 0, W, 112, ["#58a8e2", "#9ad0f0", "#d8eef8"]); PK.ell(g, 260, 18, 8, 8, "#fff6c0"); }
+    const cloud = PK.mk(34, 10); { const g = cloud.getContext("2d"); PK.ell(g, 14, 6, 13, 3, "#ffffff"); PK.ell(g, 20, 4, 7, 3, "#ffffff"); }
+    const farTrees = strip(360, 34, 80, put => { for (let i = 0; i < 12; i++) put(i * 30, (g, x) => tree(g, x, 110, 1.2, "#4f8a3a", "#6aa848")); });
+    const lawn = strip(320, 16, 110, put => { put(0, (g, x) => { R(g, x, 110, W, GROUND - 110, "#7ab84a"); for (let k = 0; k < W; k += 3) P(g, x + k, 112 + (k % 9), "#8ac85a"); }); });
+    const bushes = strip(380, 12, 110, put => { for (let i = 0; i < 7; i++) put(i * 58 > 379 ? i * 58 - 380 : i * 58, (g, x) => { PK.ell(g, x, 118, 12, 5, "#3f7a32"); PK.ell(g, x - 3, 116, 6, 2, "#5a9a40"); }); });
+    const path = strip(320, H - GROUND, GROUND, put => { put(0, (g, x) => {
+      R(g, x, GROUND, W, H - GROUND, "#e2d2b0"); R(g, x, GROUND, W, 2, "#c8b48c");
+      for (let i = 0; i < 60; i++) P(g, x + (i * 37) % W, GROUND + 4 + (i * 13) % 30, "#c8b48c");
+      for (let i = 0; i < 12; i++) R(g, x + (i * 61) % W, GROUND + 10 + (i * 7) % 20, 2, 1, "#b8a07a"); }); });
+    const lamps = strip(420, 46, GROUND - 46, put => { for (let i = 0; i < 3; i++) put(i * 140, (g, x) => { R(g, x, GROUND - 40, 2, 40, "#2a2a30"); R(g, x - 3, GROUND - 44, 8, 5, "#2a2a30"); R(g, x - 2, GROUND - 43, 6, 3, "#f2e8b0"); }); });
     return (g, off, t) => {
       const s = t / 1000;
-      PK.gradV(g, 0, 0, W, 112, ["#58a8e2", "#9ad0f0", "#d8eef8"]);
-      PK.ell(g, 260, 18, 8, 8, "#fff6c0");
-      for (let i = 0; i < 4; i++) { const x = wrap(i * 100 - off * .05 - s * 2, W + 60) - 30, y = 14 + (i % 2) * 10; PK.ell(g, x, y, 13, 3, "#ffffff"); PK.ell(g, x + 6, y - 2, 7, 3, "#ffffff"); }
+      g.drawImage(sky, 0, 0);
+      for (let i = 0; i < 4; i++) { const x = wrap(i * 100 - off * .05 - s * 2, W + 60) - 30, y = 14 + (i % 2) * 10; g.drawImage(cloud, Math.round(x) - 14, y - 6); }
       // замок вдали
-      const cx = wrap(80 - off * .12, 900) - 300; g.drawImage(cs, cx, 14); g.drawImage(cs, cx + 900, 14);
-      // дальние деревья
+      const cx = Math.round(wrap(80 - off * .12, 900) - 300); g.drawImage(cs, cx, 14); g.drawImage(cs, cx + 900, 14);
       R(g, 0, 104, W, 12, "#6aa04a");
-      for (let i = -1; i < 12; i++) { const x = wrap(i * 30 - off * .3, W + 40) - 20; tree(g, x, 110, 1.2, "#4f8a3a", "#6aa848"); }
-      // газон и кусты
-      R(g, 0, 110, W, GROUND - 110, "#7ab84a"); for (let x = 0; x < W; x += 3) P(g, wrap(x - off * .7, W), 112 + (x % 9), "#8ac85a");
-      for (let i = -1; i < 7; i++) { const x = wrap(i * 58 - off * .7, W + 60) - 30; PK.ell(g, x, 118, 12, 5, "#3f7a32"); PK.ell(g, x - 3, 116, 6, 2, "#5a9a40"); }
-      // дорожка из гравия
-      R(g, 0, GROUND, W, H - GROUND, "#e2d2b0"); R(g, 0, GROUND, W, 2, "#c8b48c");
-      for (let i = 0; i < 60; i++) P(g, wrap(i * 37 - off, W), GROUND + 4 + (i * 13) % 30, "#c8b48c");
-      for (let i = 0; i < 12; i++) R(g, wrap(i * 61 - off, W), GROUND + 10 + (i * 7) % 20, 2, 1, "#b8a07a");
-      // фонари вдоль дорожки
-      for (let i = 0; i < 3; i++) { const x = wrap(i * 140 - off, W + 140) - 70; R(g, x, GROUND - 40, 2, 40, "#2a2a30"); R(g, x - 3, GROUND - 44, 8, 5, "#2a2a30"); R(g, x - 2, GROUND - 43, 6, 3, "#f2e8b0"); }
+      farTrees(g, off * .3 + 20);
+      lawn(g, off * .7); bushes(g, off * .7 + 30);
+      path(g, off); lamps(g, off + 70);
     };
   }
   // ---------- футбольное поле (вид сверху) ----------

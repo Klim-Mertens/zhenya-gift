@@ -32,11 +32,23 @@ window.PK = (() => {
     for (;;) { c.fillRect(x0, y0, 1, 1); if (x0 === x1 && y0 === y1) break; const e2 = 2 * e; if (e2 >= dy) { e += dy; x0 += sx; } if (e2 <= dx) { e += dx; y0 += sy; } }
   }
   // Вертикальный градиент полосами с дизерингом между соседними цветами
+  // Вертикальный градиент с дизерингом. Рисовать попиксельно дорого (тысячи fillRect за кадр),
+  // поэтому результат кэшируем: один раз рисуем на отдельный холст, дальше только копируем.
+  const gradCache = new Map();
   function gradV(c, x, y, w, h, cols) {
-    for (let j = 0; j < h; j++) {
-      const t = j / Math.max(1, h - 1) * (cols.length - 1), i = Math.min(cols.length - 2, Math.floor(t)), f = t - i;
-      for (let k = 0; k < w; k++) { const th = BAYER[((y + j) & 3) * 4 + ((x + k) & 3)]; c.fillStyle = f > th ? cols[i + 1] : cols[i]; c.fillRect(x + k, y + j, 1, 1); }
+    x = Math.round(x); y = Math.round(y);
+    const key = w + "," + h + "," + (x & 3) + "," + (y & 3) + "," + cols.join();
+    let cv = gradCache.get(key);
+    if (!cv) {
+      cv = mk(w, h); const g = cv.getContext("2d");
+      for (let j = 0; j < h; j++) {
+        const t = j / Math.max(1, h - 1) * (cols.length - 1), i = Math.min(cols.length - 2, Math.floor(t)), f = t - i;
+        for (let k = 0; k < w; k++) { const th = BAYER[((y + j) & 3) * 4 + ((x + k) & 3)]; g.fillStyle = f > th ? cols[i + 1] : cols[i]; g.fillRect(k, j, 1, 1); }
+      }
+      if (gradCache.size > 200) gradCache.clear();
+      gradCache.set(key, cv);
     }
+    c.drawImage(cv, x, y);
   }
   // Дизеринг-заливка: доля f пикселей цветом b поверх a (по сетке Байера)
   function dither(c, x, y, w, h, a, b, f) { for (let j = 0; j < h; j++) for (let k = 0; k < w; k++) { const th = BAYER[((y + j) & 3) * 4 + ((x + k) & 3)]; c.fillStyle = f > th ? b : a; c.fillRect(x + k, y + j, 1, 1); } }

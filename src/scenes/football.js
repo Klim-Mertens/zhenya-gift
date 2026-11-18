@@ -84,7 +84,7 @@ class DuelScene extends Phaser.Scene {
     this.cameras.main.fadeIn(500, 0, 0, 0);
     this.bg = ParkArt.pitch(false);
     this.keys = this.input.keyboard.addKeys("UP,DOWN,LEFT,RIGHT,W,A,S,D,SPACE,SHIFT");
-    this.goals = 0; this.time0 = 120; this.state = "intro";
+    this.goals = 0; this.leGoals = 0; this.time0 = 120; this.state = "intro";
     this.resetPositions();
     World.backdrop(this, "duel_bg", (g, t) => this.draw(g, t), -1000);
     this.time.delayedCall(500, () => this.intro());
@@ -92,8 +92,8 @@ class DuelScene extends Phaser.Scene {
   resetPositions() {
     const P = ParkArt.PITCH;
     this.zh = { x: P.x + 60, y: 100, fx: 1, fy: 0, stam: 1, stun: 0, dir: "side", flip: false, t: 0 };
-    this.le = { x: P.x + P.w - 70, y: 100, cd: 1, dash: 0, dx: 0, dy: 0, t: 0, flip: true };
-    this.ball = { x: P.x + 70, y: 100, vx: 0, vy: 0, owner: "zh", lock: 0 };
+    this.le = { x: P.x + P.w - 70, y: 100, cd: 1, dash: 0, dx: 0, dy: 0, t: 0, flip: true, attack: false, atkT: 0, atkDy: 0, stun: 0, stealCd: 0 };
+    this.ball = { x: P.x + 70, y: 100, vx: 0, vy: 0, owner: "zh", lock: 0, last: "zh" };
     this.charge = -1;
   }
   async intro() {
@@ -103,8 +103,8 @@ class DuelScene extends Phaser.Scene {
       { keys: ["←", "↑", "↓", "→"], icons: [tx("zh_summer_side_1"), ball], text: "Стрелки или WASD — бег. Мяч катится перед Женей сам." },
       { keys: ["Пробел"], text: "Удар: зажми пробел, чтобы набрать силу (полоска над Женей), отпусти — мяч летит. Целься в ворота справа." },
       { keys: ["Shift"], text: "Рывок: бежишь быстрее, но тратишь силы. Они восстанавливаются, когда отпускаешь." },
-      { icons: [tx("le_kit_side_0")], text: "Лера отбирает мяч, блокирует слабые удары и бросается в ноги. Обведи её!" },
-      { text: "Забей 3 гола за 2 минуты. Не успела — попробуешь ещё раз." }
+      { icons: [tx("le_kit_side_0")], text: "Лера отбирает мяч и бросается в ноги. А иногда сама бежит к твоим воротам слева и бьёт! Подбеги к ней вплотную — отберёшь мяч." },
+      { text: "Кто первым забьёт 3 гола, тот и победил. На всё 2 минуты. Не вышло — попробуешь ещё раз." }
     ]);
     for (const n of ["3", "2", "1"]) { UI.banner(`<div class="syl"><span>${n}</span></div>`, "chant", 600); Sound.sfx("blip", 1.6); await World.wait(this, 650); }
     Sound.sfx("whistle"); this.state = "play";
@@ -115,7 +115,7 @@ class DuelScene extends Phaser.Scene {
     const dt = Math.min(.05, dtMs / 1000), P = ParkArt.PITCH, G = ParkArt.GOAL, K = this.keys, z = this.zh, l = this.le, b = this.ball;
     if (this.state !== "play" || UI.busy) return;
     this.time0 -= dt;
-    UI.goal(`Голы: ${this.goals}/3 · ${Math.max(0, Math.floor(this.time0 / 60))}:${String(Math.max(0, Math.floor(this.time0 % 60))).padStart(2, "0")}`);
+    UI.goal(`Женя ${this.goals} : ${this.leGoals} Лера · ${Math.max(0, Math.floor(this.time0 / 60))}:${String(Math.max(0, Math.floor(this.time0 % 60))).padStart(2, "0")}`);
     if (this.time0 <= 0) return this.lose();
     // ---------- Женя ----------
     z.stun = Math.max(0, z.stun - dt);
@@ -144,27 +144,44 @@ class DuelScene extends Phaser.Scene {
         if (yCross > G.y - 2 && yCross < G.y + G.h + 2) return this.scored();
         return this.missed();
       }
-      if (b.x < P.x) { b.vx *= -.6; b.x = P.x; }
+      if (b.x <= P.x) {                                       // левые ворота — ворота Жени
+        const k = b.vx < 0 ? (P.x - b.x) / (-b.vx * dt) : 0, yCross = b.y - b.vy * dt * Math.min(1, k);
+        if (yCross > G.y - 2 && yCross < G.y + G.h + 2) return this.leScored(b.last === "zh");
+        return this.goalKick();
+      }
       if (!b.lock && Math.hypot(b.x - z.x, b.y - z.y) < 7 && !z.stun) { b.owner = "zh"; Sound.sfx("blip", .8); }
       if (!b.lock && Math.hypot(b.x - l.x, b.y - l.y) < 7) {
         const spd = Math.hypot(b.vx, b.vy), fast = spd > 170 - this.lvl * 12;
         // сильный удар часто проходит мимо Леры: шанс отбить падает со скоростью мяча
         if (fast && Math.random() > .75 - (spd - 170) / 400 + this.lvl * .08) { b.lock = .3; UI.toast("Лера не достала!", 800); }
         else if (fast) { b.vx = -b.vx * .5 + (Math.random() - .5) * 80; b.vy = b.vy * .5 + (Math.random() - .5) * 120; b.lock = .25; Sound.sfx("place"); UI.toast("Лера отбила!", 900); }
-        else { b.owner = "le"; l.hold = .35; Sound.sfx("place"); }
+        else { this.leTakes(); Sound.sfx("place"); }
       }
     }
     // ---------- Лера (защитник) ----------
     const lsp = 42 + this.lvl * 6; l.cd = Math.max(0, l.cd - dt);
     const goalX = P.x + P.w, goalY = G.y + G.h / 2;
-    if (b.owner === "le") {                                   // Лера выносит мяч влево
-      l.hold -= dt; if (l.hold <= 0) { b.owner = null; const a = Math.PI + (Math.random() - .5) * 1.4; b.vx = Math.cos(a) * 230; b.vy = Math.sin(a) * 230; b.lock = .4; Sound.sfx("pick"); UI.toast(["Лера: Вынос!", "Лера: Не так быстро!", "Лера: Защита не дремлет!"][Math.floor(Math.random() * 3)], 1100); }
+    l.stun = Math.max(0, l.stun - dt); l.stealCd = Math.max(0, l.stealCd - dt);
+    if (b.owner === "le" && l.attack) {                       // Лера идёт в атаку на левые ворота
+      l.atkT += dt;
+      const tx = P.x + 70, ty = goalY + l.atkDy, dx = tx - l.x, dy = ty - l.y, d = Math.hypot(dx, dy);
+      if (d > 1) { const v = lsp * .95 * dt; l.x += dx / d * Math.min(d, v); l.y += dy / d * Math.min(d, v); l.t += dtMs; l.flip = true; }
+      if (!z.stun && l.stealCd <= 0 && Math.hypot(b.x - z.x, b.y - z.y) < 10) {          // Женя отбирает мяч
+        b.owner = "zh"; b.last = "zh"; l.attack = false; l.stun = .7; l.cd = 1.4; Sound.sfx("blip", .8); UI.toast("Отобрала!", 900);
+      } else if (l.x < P.x + 100 || l.atkT > 4.5) {                                      // удар по воротам Жени
+        const aimY = G.y + 6 + Math.random() * (G.h - 12) + (Math.random() - .5) * 40, a = Math.atan2(aimY - b.y, P.x - b.x);
+        b.owner = null; b.last = "le"; b.vx = Math.cos(a) * 260; b.vy = Math.sin(a) * 260; b.lock = .4; l.attack = false; l.cd = 1;
+        Sound.sfx("pick"); UI.toast("Лера бьёт по твоим воротам!", 1000);
+      }
+    } else if (b.owner === "le") {                            // Лера выносит мяч влево
+      l.hold -= dt; if (l.hold <= 0) { b.last = "le"; b.owner = null; const a = Math.PI + (Math.random() - .5) * 1.4; b.vx = Math.cos(a) * 230; b.vy = Math.sin(a) * 230; b.lock = .4; Sound.sfx("pick"); UI.toast(["Лера: Вынос!", "Лера: Не так быстро!", "Лера: Защита не дремлет!"][Math.floor(Math.random() * 3)], 1100); }
     } else if (l.dash > 0) {                                  // подкат
       l.dash -= dt; l.x += l.dx * 140 * dt; l.y += l.dy * 140 * dt;
       if (b.owner === "zh" && Math.hypot(b.x - l.x, b.y - l.y) < 8) {
         b.owner = null; const a = Math.atan2(b.y - l.y, b.x - l.x) + Math.PI + (Math.random() - .5); b.vx = Math.cos(a) * 150 - 60; b.vy = Math.sin(a) * 150; b.lock = .35;
         z.stun = .55; Sound.sfx("wrong"); this.cameras.main.shake(150, .006); UI.toast("Подкат! Мяч отобран", 1100);
       }
+    } else if (l.stun > 0) { l.t = 0;
     } else {
       // встаём между мячом и воротами, ближе к мячу; если мяч рядом и он у Жени — подкат
       let tx, ty, boost = 1;
@@ -193,14 +210,34 @@ class DuelScene extends Phaser.Scene {
     }
     return [Math.cos(a), Math.sin(a)];
   }
+  // Лера забрала мяч: иногда (35%) идёт в атаку, иначе выносит
+  leTakes() {
+    const l = this.le, b = this.ball; b.owner = "le"; b.vx = b.vy = 0; l.hold = .35; l.dash = 0;
+    l.attack = Math.random() < .35; l.atkT = 0; l.atkDy = (Math.random() - .5) * 30;
+    if (l.attack) UI.toast("Лера идёт в атаку!", 900);
+  }
+  // мимо левых ворот: мяч у Жени у её ворот
+  goalKick() {
+    const b = this.ball, z = this.zh, P = ParkArt.PITCH, G = ParkArt.GOAL;
+    UI.toast("Мимо! Мяч твой", 1000); z.x = P.x + 22; z.y = G.y + G.h / 2; z.fx = 1; z.fy = 0; z.stun = 0;
+    b.owner = "zh"; b.vx = b.vy = 0; b.last = "zh"; this.le.attack = false;
+  }
+  // гол в ворота Жени (или автогол)
+  async leScored(own) {
+    this.state = "goal"; this.leGoals++; Sound.sfx("whistle"); this.cameras.main.shake(200, .005);
+    await UI.banner(`<div class="syl"><span>${own ? "АВТОГОЛ" : "ГОЛ ЛЕРЫ"}</span></div>`, "chant", 1300);
+    if (this.leGoals >= 3) return this.lose(true);
+    await UI.say([{ who: "le", text: own ? "Ха-ха! Женя, свои ворота слева!" : ["Защитник тоже умеет забивать!", "Два-ноль в мою пользу... ой, то есть сколько там?"][this.leGoals - 1] || "Ещё один!" }]);
+    this.resetPositions(); await World.wait(this, 300); this.state = "play";
+  }
   // мимо ворот: мяч у Леры, она выбивает
   missed() {
     const b = this.ball, l = this.le; UI.toast("Мимо ворот! Удар от ворот", 1100); Sound.sfx("wrong");
     l.x = ParkArt.PITCH.x + ParkArt.PITCH.w - 14; l.y = ParkArt.GOAL.y + ParkArt.GOAL.h / 2; l.dash = 0;
-    b.owner = "le"; b.vx = b.vy = 0; l.hold = .6;
+    b.owner = "le"; b.vx = b.vy = 0; l.hold = .6; l.attack = false;
   }
   kick(fx, fy, power) {
-    const b = this.ball; b.owner = null; b.vx = fx * power; b.vy = fy * power; b.lock = .3; Sound.sfx("pick"); this.cameras.main.shake(80, .003);
+    const b = this.ball; b.owner = null; b.last = "zh"; b.vx = fx * power; b.vy = fy * power; b.lock = .3; Sound.sfx("pick"); this.cameras.main.shake(80, .003);
   }
   async scored() {
     this.state = "goal"; this.goals++; Sound.sfx("chant"); this.cameras.main.shake(300, .006);
@@ -210,15 +247,15 @@ class DuelScene extends Phaser.Scene {
     await UI.say(lines.map(t => ({ who: "le", text: t })));
     this.resetPositions(); await World.wait(this, 300); this.state = "play";
   }
-  async lose() {
+  async lose(leWon) {
     this.state = "over"; UI.goal(""); Sound.sfx("whistle");
     await UI.say([
-      { who: "le", text: `Время! ${this.goals} из 3. Неплохо, но защита сегодня в ударе!` },
+      { who: "le", text: leWon ? `Три гола мои! ${this.goals}:${this.leGoals}. Реванш?` : `Время! ${this.goals}:${this.leGoals}. Неплохо, но защита сегодня в ударе!` },
       { who: "le", text: "Ещё раз? Подсказка: держи пробел подольше и бей, пока я не подбежала. И не забывай про рывок!" }
     ]);
     this.tries = (this.tries || 0) + 1;
     if (this.tries >= 2) await UI.say([{ who: "le", text: `Ладно, даю фору: ${120 + 20 * this.tries} секунд!` }]);
-    this.goals = 0; this.time0 = 120 + 20 * this.tries; this.resetPositions(); this.state = "play";
+    this.goals = 0; this.leGoals = 0; this.time0 = 120 + 20 * this.tries; this.resetPositions(); this.state = "play";
   }
   async win() {
     this.state = "over"; UI.goal("");
@@ -229,11 +266,11 @@ class DuelScene extends Phaser.Scene {
       { who: "le", text: "Вечером, кстати, у Даны танцы. Пойдём? Ты же любишь танцевать!" },
       { who: "zhs", text: "Ещё как! Только сначала джелато." }
     ]);
-    Save.store("studio");
+    Save.store("street");
     await UI.card("Глава 2 пройдена", "Лера и футбол ★", 3000);
     await UI.card("Глава 3", "Танцы у Даны · вечером", 2600);
     this.cameras.main.fadeOut(600, 0, 0, 0);
-    this.time.delayedCall(650, () => this.scene.start("studio"));
+    this.time.delayedCall(650, () => this.scene.start("street"));
   }
   draw(g, t) {
     const s = t / 1000, z = this.zh, l = this.le, b = this.ball, src = k => this.textures.get(k).getSourceImage(), R = PK.R;
