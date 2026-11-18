@@ -2,7 +2,12 @@
    Браузер разрешает звук только после первого нажатия, поэтому Audio.unlock() зовём из обработчика клавиши или клика. */
 "use strict";
 window.Sound = (() => {
-  let ctx = null, master = null, musicBus = null, sfxBus = null, timer = null, track = null, muted = false;
+  let ctx = null, master = null, musicBus = null, sfxBus = null, ambBus = null, timer = null, track = null, muted = false;
+  // громкость музыки и звуков отдельно (0..1), запоминается в браузере
+  const VOL_KEY = "zhenya-gift-vol";
+  const vol = (() => { try { const v = JSON.parse(localStorage.getItem(VOL_KEY) || "null"); if (v && typeof v.music === "number" && typeof v.sfx === "number") return v; } catch (e) {} return { music: .8, sfx: .8 }; })();
+  const applyVol = () => { if (!ctx) return; musicBus.gain.value = .4 * vol.music; sfxBus.gain.value = .68 * vol.sfx; };
+  function setVolume(kind, v) { vol[kind] = Math.max(0, Math.min(1, v)); applyVol(); try { localStorage.setItem(VOL_KEY, JSON.stringify(vol)); } catch (e) {} }
   const NOTE = n => { if (!n || n === "-") return 0; const m = /^([A-G])(#?)(\d)$/.exec(n); const idx = { C: -9, D: -7, E: -5, F: -4, G: -2, A: 0, B: 2 }[m[1]] + (m[2] ? 1 : 0) + (+m[3] - 4) * 12; return 440 * Math.pow(2, idx / 12); };
   function unlock() {
     if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
@@ -10,7 +15,10 @@ window.Sound = (() => {
     ctx = new AC(); master = ctx.createGain(); master.gain.value = muted ? 0 : .7; master.connect(ctx.destination);
     musicBus = ctx.createGain(); musicBus.gain.value = .32; musicBus.connect(master);
     sfxBus = ctx.createGain(); sfxBus.gain.value = .55; sfxBus.connect(master);
+    ambBus = ctx.createGain(); ambBus.gain.value = 1; ambBus.connect(sfxBus);
+    applyVol();
     if (track) play(track.name, true);
+    if (amb.name) { const n = amb.name; amb.name = null; ambient(n); }
   }
   // Один тон с огибающей
   function tone(freq, t, dur, { type = "square", vol = .2, bus = sfxBus, slide = 0, attack = .005, release = .08, vib = 0 } = {}) {
@@ -104,6 +112,18 @@ window.Sound = (() => {
             ["E5", .5], ["G5", .5], ["C6", .5], ["G5", .5], ["E5", 1], ["G5", 1], ["A5", .5], ["G5", .5], ["E5", 1], ["-", 2],
             ["D5", .5], ["G5", .5], ["B5", .5], ["D6", .5], ["B5", 1], ["A5", 1], ["G5", .5], ["A5", .5], ["B5", 1], ["-", 2]],
       bass: pulse(["Am", "F", "C", "G"], 8) },
+    // Титры: «по мотиву» In the End — своя мелодия в том же настроении (минор, ~105 bpm, «фортепианное» арпеджио восьмыми, бит).
+    // Ноты оригинала НЕ используются: репозиторий публичный, поэтому только настроение, гармония i–VI–III–VII и темп.
+    credits: { bpm: 105, lead: "triangle", bell: true, drums: true,
+      mel: [["E5", .5], ["B4", .5], ["G4", .5], ["B4", .5], ["E5", .5], ["B4", .5], ["G5", .5], ["F#5", .5],
+            ["E5", .5], ["C5", .5], ["G4", .5], ["C5", .5], ["E5", .5], ["C5", .5], ["D5", .5], ["E5", .5],
+            ["D5", .5], ["B4", .5], ["G4", .5], ["B4", .5], ["D5", .5], ["B4", .5], ["G4", .5], ["B4", .5],
+            ["F#5", .5], ["D5", .5], ["A4", .5], ["D5", .5], ["F#5", .5], ["E5", .5], ["D5", .5], ["A4", .5],
+            ["E5", .5], ["B4", .5], ["G4", .5], ["B4", .5], ["E5", .5], ["B4", .5], ["G5", .5], ["A5", .5],
+            ["G5", 1], ["E5", .5], ["C5", .5], ["E5", 1], ["G5", 1],
+            ["F#5", 1], ["D5", .5], ["B4", .5], ["D5", 1], ["G5", .5], ["F#5", .5],
+            ["E5", 1.5], ["D5", .5], ["F#5", 1], ["-", 1]],
+      bass: oompa(["Em", "C", "G", "D", "Em", "C", "G", "D"]) },
     // Кухня Нарины: тёплый мандолинный вальсок (свой мотив)
     cucina: { bpm: 132, lead: "triangle", mandolin: true, tamb: false, bell: false, drums: false,
       mel: [["C5", 1], ["F5", .5], ["A5", .5], ["G5", 1], ["F5", 1], ["E5", .5], ["F5", .5], ["G5", 1], ["C5", 2],
@@ -183,6 +203,11 @@ window.Sound = (() => {
       });
       [2.0, 2.3, 2.6].forEach(d => clap(t + d, .22));
     },
+    // один слог кричалки для «Красный свет, зелёный свет»: барабан + папин голос; на «ТАК» — громче и с толпой
+    syl: (i = 0) => { const t = now(), N = [196, 196, 196, 233, 196][i] || 196, last = i === 4;
+      tone(70, t, .18, { type: "sine", vol: .5, slide: .5 }); noise(t, .12, { vol: .16, hp: 300 });
+      tone(N, t, last ? .5 : .24, { type: "sawtooth", vol: .1, vib: 5, attack: .02, slide: last ? .8 : 1 }); tone(N * 2, t, last ? .5 : .24, { type: "square", vol: .03, vib: 5, attack: .02 });
+      if (last) { clap(t + .16, .22); crowd(t, 1.2, .18); } },
     shutter: () => { const t = now(); noise(t, .04, { vol: .3, hp: 2500 }); noise(t + .07, .05, { vol: .25, hp: 1800 }); },
     sparkle: () => { const t = now(); [1568, 2093, 2637, 3136].forEach((f, i) => tone(f, t + i * .06, .1, { type: "sine", vol: .08 })); },
     flap: () => { const t = now(); for (let k = 0; k < 6; k++) noise(t + k * .05, .04, { vol: .12, hp: 900 }); },
@@ -192,9 +217,62 @@ window.Sound = (() => {
     // Папа стучит ложкой по крышке кастрюли — «обряд на удачу»
     bong: () => { const t = now(); tone(880, t, .5, { type: "triangle", vol: .16, slide: .98, release: .4 }); tone(1320, t, .3, { type: "sine", vol: .08, release: .3 }); noise(t, .04, { vol: .12, hp: 2000 }); }
   };
+
+  // ---------- звуки окружения (фон сцены) ----------
+  // Каждая сцена включает свой фон: тихий шум-«подложка» и случайные события (голуби, колокол, птицы, сверчки…)
+  const amb = { name: null, bed: null, timers: [] };
+  function bedNoise(type, freq, v, q = .7) {
+    const len = ctx.sampleRate * 3, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    let b = 0; for (let i = 0; i < len; i++) { b = b * .97 + (Math.random() * 2 - 1) * .03; d[i] = b * 6 + (Math.random() * 2 - 1) * .15; }
+    const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(); s.buffer = buf; s.loop = true; f.type = type; f.frequency.value = freq; f.Q.value = q;
+    g.gain.setValueAtTime(0, ctx.currentTime); g.gain.linearRampToValueAtTime(v, ctx.currentTime + 1.2);
+    s.connect(f); f.connect(g); g.connect(ambBus); s.start(); return { s, g };
+  }
+  const A = {
+    coo: () => { const t = now(); [0, .35].forEach((d, i) => tone(i ? 260 : 300, t + d, .28, { type: "sine", vol: .05, bus: ambBus, vib: 18, slide: .85, attack: .05 })); },
+    chirp: () => { const t = now(), n = 2 + Math.floor(Math.random() * 4), f = 2800 + Math.random() * 1400; for (let k = 0; k < n; k++) tone(f, t + k * .09, .05, { type: "sine", vol: .03, bus: ambBus, slide: 1.3, release: .03 }); },
+    cricket: () => { const t = now(); for (let k = 0; k < 3; k++) for (let j = 0; j < 4; j++) tone(4400, t + k * .25 + j * .03, .015, { type: "square", vol: .006, bus: ambBus, release: .01 }); },
+    bell: () => { const t = now(); [523, 1046, 1568].forEach((f, i) => tone(f, t, 1.6, { type: "sine", vol: [.035, .015, .008][i], bus: ambBus, release: 1.4 })); },
+    horn: () => { const t = now(), f = 380 + Math.random() * 120; tone(f, t, .18, { type: "square", vol: .012, bus: ambBus }); if (Math.random() < .5) tone(f, t + .25, .25, { type: "square", vol: .012, bus: ambBus }); },
+    vespa: () => { const t = now(); const o = ctx.createOscillator(), g = ctx.createGain(); o.type = "sawtooth"; o.frequency.setValueAtTime(110, t); o.frequency.linearRampToValueAtTime(170, t + 1.4); o.frequency.linearRampToValueAtTime(130, t + 2.6);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.018, t + 1.2); g.gain.linearRampToValueAtTime(0, t + 2.6); o.connect(g); g.connect(ambBus); o.start(t); o.stop(t + 2.7); },
+    voices: () => { const t = now(); for (let k = 0; k < 3; k++) tone(170 + Math.random() * 160, t + k * .18, .22, { type: "sawtooth", vol: .006, bus: ambBus, vib: 9, attack: .05, slide: .9 + Math.random() * .3 }); },
+    clink: () => { const t = now(); tone(2700, t, .12, { type: "sine", vol: .03, bus: ambBus, release: .2 }); tone(3200, t + .06, .1, { type: "sine", vol: .02, bus: ambBus, release: .2 }); },
+    sizzle: () => { const t = now(); for (let k = 0; k < 6; k++) noise(t + Math.random() * .5, .02, { vol: .03, bus: ambBus, hp: 4000 }); },
+    bubble: () => { const t = now(); for (let k = 0; k < 3; k++) tone(220 + Math.random() * 200, t + k * .12, .05, { type: "sine", vol: .03, bus: ambBus, slide: 2.4, release: .03 }); },
+    tick: () => { noise(now(), .015, { vol: .03, bus: ambBus, hp: 3500 }); },
+    ding: () => { const t = now(); ["E5", "C5", "G4"].forEach((n, i) => tone(NOTE(n), t + i * .45, .5, { type: "sine", vol: .03, bus: ambBus, release: .5 })); },
+    bleat: () => { const t = now(); tone(420, t, .45, { type: "sawtooth", vol: .012, bus: ambBus, vib: 22, slide: .85, attack: .03 }); },
+    plop: () => { tone(900, now(), .08, { type: "sine", vol: .025, bus: ambBus, slide: .35, release: .05 }); },
+    tram: () => { const t = now(); tone(1046, t, .12, { type: "triangle", vol: .02, bus: ambBus }); tone(1046, t + .2, .12, { type: "triangle", vol: .02, bus: ambBus }); },
+    ball: () => { const t = now(); noise(t, .04, { vol: .03, bus: ambBus, hp: 600 }); }
+  };
+  // name → [подложка [тип фильтра, частота, громкость], события [[звук, раз в мин..макс секунд]]]
+  const AMB = {
+    home:    [["lowpass", 260, .05], [["tick", 1, 1]]],
+    station: [["lowpass", 500, .12], [["ding", 14, 22], ["voices", 2, 5]]],
+    milan:   [["lowpass", 420, .1], [["ding", 15, 24], ["voices", 1.5, 4], ["horn", 8, 16]]],
+    duomo:   [["lowpass", 520, .08], [["coo", 2, 5], ["voices", 2, 4], ["bell", 18, 30], ["vespa", 12, 22]]],
+    kitchen: [["highpass", 3500, .015], [["sizzle", .8, 2], ["bubble", 2, 5], ["clink", 6, 12]]],
+    park:    [["lowpass", 350, .05], [["chirp", 1.2, 3.5], ["coo", 8, 16]]],
+    stadium: [["bandpass", 700, .06], [["chirp", 3, 7], ["ball", 4, 9], ["voices", 3, 6]]],
+    street:  [["lowpass", 450, .08], [["plop", 2, 5], ["voices", 2, 4], ["clink", 3, 7], ["tram", 14, 24]]],
+    hills:   [["lowpass", 300, .06], [["chirp", 1.5, 4], ["bleat", 9, 18]]],
+    sunset:  [["lowpass", 250, .05], [["cricket", .8, 2], ["bell", 16, 28], ["chirp", 6, 12]]]
+  };
+  function ambient(name) {
+    if (amb.name === name) return;
+    // гасим прежний фон
+    if (ctx && amb.bed) { const { s, g } = amb.bed; g.gain.cancelScheduledValues(ctx.currentTime); g.gain.setValueAtTime(g.gain.value, ctx.currentTime); g.gain.linearRampToValueAtTime(0, ctx.currentTime + .8); s.stop(ctx.currentTime + .9); }
+    amb.bed = null; amb.timers.forEach(clearTimeout); amb.timers = []; amb.name = name;
+    if (!ctx || !name || !AMB[name]) return;
+    const [bed, evs] = AMB[name]; amb.bed = bedNoise(...bed);
+    evs.forEach(([ev, a, b]) => { const loop = () => { if (amb.name !== name) return; if (A[ev]) A[ev](); amb.timers.push(setTimeout(loop, (a + Math.random() * (b - a)) * 1000)); };
+      amb.timers.push(setTimeout(loop, (a + Math.random() * (b - a)) * 500)); });
+  }
   function sfx(name, arg) { if (ctx && SFX[name]) SFX[name](arg); }
   function toggleMute() { muted = !muted; if (master) master.gain.value = muted ? 0 : .7; return muted; }
   // сколько долей прошло с начала текущей музыки (для ритм-игры); null — если звука нет
   const beatNow = () => (ctx && track && track.start != null ? (ctx.currentTime - track.start) / track.beat : null);
-  return { beatNow, unlock, play, stopMusic, sfx, toggleMute, get muted() { return muted; } };
+  return { beatNow, unlock, play, stopMusic, sfx, toggleMute, ambient, setVolume, get volume() { return { ...vol }; }, get muted() { return muted; } };
 })();

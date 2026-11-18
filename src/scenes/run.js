@@ -137,6 +137,8 @@ class RunScene extends Phaser.Scene {
     await World.wait(this, 500);
     await UI.say([lost ? { who: "le", text: "Женя, ты где? Я уже у фонтана! Возвращаюсь... Жми A и D почаще, давай ещё разок!" }
       : { who: "le", text: "Женя, ты как? Цела? Отдышись и давай ещё разок, я подожду!" }]);
+    this.failN = (this.failN || 0) + 1;
+    if (await UI.offerSkip(this.failN, "забег")) { this.skipped = true; return this.finish(); }
     this.reset(); this.leX = 270;
     await this.countdown();
   }
@@ -145,7 +147,7 @@ class RunScene extends Phaser.Scene {
     this.tweens.add({ targets: this, leX: 92, duration: 900 });
     await World.wait(this, 1000);
     await UI.say([
-      { who: "le", text: "Ого, догнала! Да ты в отличной форме!" },
+      this.skipped ? { who: "le", text: "Ладно-ладно, я сбавила темп и подождала тебя! Бегать вдвоём веселее." } : { who: "le", text: "Ого, догнала! Да ты в отличной форме!" },
       { who: "zhs", text: "Уф... Это всё мамины бутерброды. И ещё немного злости на самокатчиков." },
       { who: "le", text: this.water ? `И воду по дороге собрала, ${this.water} бут.! Вот это подготовка.` : "Ха! Самокатчики тут везде, привыкай." },
       { who: "le", text: "Слушай, пошли со мной на матч! Посмотришь, как я играю. А потом сыграем один на один?" },

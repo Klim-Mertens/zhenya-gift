@@ -6,7 +6,7 @@ window.UI = (() => {
   const speakers = {};
   // В пиксельном шрифте «ёлочки» похожи на <<, поэтому меняем их на обычные кавычки
   const clean = t => String(t || "").replace(/[«»]/g, '"');
-  let busy = false, advance = null, typeTick = null, rulesDone = null;
+  let busy = false, advance = null, typeTick = null, rulesDone = null, choosing = false;
   function speaker(id, name, portraitCanvas, color) { speakers[id] = { name, cv: portraitCanvas, color }; }
   // Нажатие пробела / Enter / E / клика продвигает диалог
   function onAdvance() { if (advance) advance(); }
@@ -80,12 +80,41 @@ window.UI = (() => {
     });
   }
   function hint(text) { const el = $("hint"); el.textContent = clean(text); el.hidden = !text; }
+  // Выбор из нескольких вариантов (кнопки; ← → или ↑ ↓ и Enter/Пробел, или клик). Возвращает номер варианта.
+  function choice(question, options, def = 0) {
+    busy = true; choosing = true;
+    let el = $("choice"); if (!el) { el = document.createElement("div"); el.id = "choice"; $("ui").appendChild(el); }
+    el.innerHTML = ""; el.hidden = false;
+    const box = document.createElement("div"); box.className = "cbox"; el.appendChild(box);
+    const q = document.createElement("div"); q.className = "cq"; q.textContent = clean(question); box.appendChild(q);
+    const row = document.createElement("div"); row.className = "crow"; box.appendChild(row);
+    let sel = def; const btns = options.map((o, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = clean(o); row.appendChild(b); return b; });
+    const mark = i => { sel = (i + btns.length) % btns.length; btns.forEach((b, k) => b.classList.toggle("on", k === sel)); };
+    mark(def);
+    return new Promise(resolve => {
+      const done = i => { window.removeEventListener("keydown", key, true); el.hidden = true; busy = false; choosing = false; Sound.sfx("select"); setTimeout(() => resolve(i), 60); };
+      const key = e => { if (el.hidden) return; e.preventDefault(); e.stopImmediatePropagation();
+        if (["ArrowLeft", "ArrowUp", "KeyA", "KeyW"].includes(e.code)) { mark(sel - 1); Sound.sfx("blip"); }
+        else if (["ArrowRight", "ArrowDown", "KeyD", "KeyS"].includes(e.code)) { mark(sel + 1); Sound.sfx("blip"); }
+        else if (["Space", "Enter", "NumpadEnter"].includes(e.code)) done(sel); };
+      btns.forEach((b, i) => { b.addEventListener("click", ev => { ev.preventDefault(); done(i); }); b.addEventListener("mouseenter", () => mark(i)); });
+      setTimeout(() => window.addEventListener("keydown", key, true), 250);
+      choiceCleanup = () => { window.removeEventListener("keydown", key, true); choosing = false; };
+    });
+  }
+  let choiceCleanup = null;
+  // После 3 неудач мини-игры: предложить пропустить. true — пропустить
+  async function offerSkip(fails, what = "эту мини-игру") {
+    if (fails < 3) return false;
+    return (await choice(`Не получается? Можно пропустить ${what} и идти дальше по истории.`, ["Попробовать ещё", "Пропустить"], 0)) === 1;
+  }
   // Сброс всего интерфейса (для меню разработчика: прыжок в другую сцену посреди диалога)
   function reset() {
     clearInterval(typeTick); advance = null; busy = false;
     if (rulesDone) { window.removeEventListener("keydown", rulesDone); const r = $("rules"); if (r) r.removeEventListener("pointerdown", rulesDone); rulesDone = null; }
-    ["dialog", "rules", "banner", "card", "toast", "title"].forEach(id => { const el = $(id); if (el) el.hidden = true; });
+    if (choiceCleanup) { choiceCleanup(); choiceCleanup = null; }
+    ["dialog", "rules", "banner", "card", "toast", "title", "choice"].forEach(id => { const el = $(id); if (el) el.hidden = true; });
     goal(""); hint(""); const h = $("hint"); if (h) h.classList.remove("high");
   }
-  return { rules, reset, portrait: id => speakers[id] && speakers[id].cv, speaker, say, goal, toast, banner, card, hint, bindClick, get busy() { return busy; } };
+  return { rules, reset, choice, offerSkip, get choosing() { return choosing; }, portrait: id => speakers[id] && speakers[id].cv, speaker, say, goal, toast, banner, card, hint, bindClick, get busy() { return busy; } };
 })();

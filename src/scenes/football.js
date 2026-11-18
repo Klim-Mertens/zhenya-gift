@@ -254,14 +254,17 @@ class DuelScene extends Phaser.Scene {
       { who: "le", text: "Ещё раз? Подсказка: держи пробел подольше и бей, пока я не подбежала. И не забывай про рывок!" }
     ]);
     this.tries = (this.tries || 0) + 1;
+    if (await UI.offerSkip(this.tries, "дуэль")) { this.skipped = true; return this.win(); }
     if (this.tries >= 2) await UI.say([{ who: "le", text: `Ладно, даю фору: ${120 + 20 * this.tries} секунд!` }]);
     this.goals = 0; this.leGoals = 0; this.time0 = 120 + 20 * this.tries; this.resetPositions(); this.state = "play";
   }
   async win() {
     this.state = "over"; UI.goal("");
     await UI.say([
-      { who: "le", text: "Три гола! Мне, защитнику! Женя, ты где так научилась?!" },
-      { who: "zhs", text: "Кросс по Коврову, восемь километров! Мы с братом тогда еле добежали, зато теперь я непобедима." },
+      ...(this.skipped ? [{ who: "le", text: "Слушай, счёт неважен! Ты бегала как настоящий нападающий." },
+        { who: "zhs", text: "Это всё кросс по Коврову, восемь километров! Мы с братом тогда еле добежали." }]
+      : [{ who: "le", text: "Три гола! Мне, защитнику! Женя, ты где так научилась?!" },
+        { who: "zhs", text: "Кросс по Коврову, восемь километров! Мы с братом тогда еле добежали, зато теперь я непобедима." }]),
       { who: "le", text: "Ха-ха! Ну всё, джелато с меня. Фисташковое, как договаривались." },
       { who: "le", text: "Вечером, кстати, у Даны танцы. Пойдём? Ты же любишь танцевать!" },
       { who: "zhs", text: "Ещё как! Только сначала джелато." }
@@ -270,7 +273,7 @@ class DuelScene extends Phaser.Scene {
     await UI.card("Глава 2 пройдена", "Лера и футбол ★", 3000);
     await UI.card("Глава 3", "Танцы у Даны · вечером", 2600);
     this.cameras.main.fadeOut(600, 0, 0, 0);
-    this.time.delayedCall(650, () => this.scene.start("street"));
+    this.time.delayedCall(650, () => this.scene.start("transit", { route: "navigli", next: "street" }));
   }
   draw(g, t) {
     const s = t / 1000, z = this.zh, l = this.le, b = this.ball, src = k => this.textures.get(k).getSourceImage(), R = PK.R;

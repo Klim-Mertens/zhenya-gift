@@ -99,6 +99,7 @@ class DriveScene extends Phaser.Scene {
       { who: "lo", text: "Ох, солнце почти село... Ничего! Давай ещё раз, я подскажу дорогу." },
       { who: "lo", text: this.fails >= 2 ? "Возьмём другую дорогу: она шире, и коз там меньше. Не спеши на поворотах!" : "Держи газ на прямых, а перед поворотами чуть тормози." }
     ]);
+    if (await UI.offerSkip(this.fails, "дорогу")) { this.skipped = true; return this.finish(); }
     this.reset(); await this.countdown();
   }
   async finish() {

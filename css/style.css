@@ -91,3 +91,33 @@ body { display: grid; place-items: center; font-family: "Tiny5", monospace; colo
 #dev .dgrp { break-inside: avoid; }
 #dev .dchap { margin-top: calc(2px * var(--z)) !important; }
 #dev .dkeys { float: right; font-size: calc(5px * var(--z)); color: #a8b8d0; margin-top: calc(2px * var(--z)); }
+
+/* ---- Пауза ---- */
+#pausebtn { position: absolute; right: calc(4px * var(--z)); top: calc(18px * var(--z)); width: calc(12px * var(--z)); height: calc(12px * var(--z)); padding: 0;
+  font: inherit; font-size: calc(6px * var(--z)); color: #fff4dc; background: #2b1c34; border: calc(1px * var(--z)) solid #f2c46a; cursor: pointer; pointer-events: auto; opacity: .75; z-index: 30; }
+#pause { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10, 8, 16, .72); pointer-events: auto; z-index: 35; }
+#pause[hidden] { display: none; }
+#pause .pbox { background: #2a1c2e; border: calc(2px * var(--z)) solid #e8b860; box-shadow: 0 0 0 calc(1px * var(--z)) #3b2420; padding: calc(6px * var(--z)) calc(10px * var(--z)); width: calc(260px * var(--z)); color: #f4ead8; }
+#pause .ptitle { font-size: calc(12px * var(--z)); color: #ffe9b0; text-align: center; margin-bottom: calc(4px * var(--z)); }
+#pause .pcols { display: grid; grid-template-columns: 1.3fr 1fr; gap: calc(10px * var(--z)); }
+#pause .psub { font-size: calc(6px * var(--z)); color: #f2c46a; margin-bottom: calc(3px * var(--z)); }
+#pause .prow { display: flex; gap: calc(4px * var(--z)); font-size: calc(5.5px * var(--z)); margin-bottom: calc(2px * var(--z)); }
+#pause .prow b { color: #9ae0ff; font-weight: normal; min-width: calc(52px * var(--z)); }
+#pause label { display: block; font-size: calc(6px * var(--z)); margin-bottom: calc(4px * var(--z)); }
+#pause input[type=range] { width: 100%; accent-color: #e8b860; height: calc(6px * var(--z)); margin-top: calc(1px * var(--z)); }
+#pause button { display: block; width: 100%; font: inherit; font-size: calc(7px * var(--z)); color: #fff4dc; background: #2b1c34; border: calc(1px * var(--z)) solid #f2c46a; padding: calc(1px * var(--z)); margin-top: calc(4px * var(--z)); cursor: pointer; }
+#pause button:hover, #pause button:focus-visible, #pause input:focus-visible { background: #c8402a; outline: none; }
+#pause .pfoot { font-size: calc(5px * var(--z)); color: #a8b8d0; text-align: center; margin-top: calc(5px * var(--z)); }
+
+/* ---- Выбор «Попробовать ещё / Пропустить» ---- */
+#choice { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10, 8, 16, .55); pointer-events: auto; z-index: 25; }
+#choice[hidden] { display: none; }
+#choice .cbox { background: #2a1c2e; border: calc(2px * var(--z)) solid #e8b860; padding: calc(6px * var(--z)) calc(10px * var(--z)); width: calc(220px * var(--z)); color: #f4ead8; text-align: center; }
+#choice .cq { font-size: calc(7px * var(--z)); margin-bottom: calc(6px * var(--z)); line-height: 1.35; }
+#choice .crow { display: flex; gap: calc(6px * var(--z)); justify-content: center; }
+#choice button { font: inherit; font-size: calc(7px * var(--z)); color: #fff4dc; background: #2b1c34; border: calc(1px * var(--z)) solid #f2c46a; padding: calc(1px * var(--z)) calc(8px * var(--z)); cursor: pointer; }
+#choice button.on { background: #c8402a; }
+.banner.chant.rl { place-items: start center; padding-top: calc(34px * var(--z)); padding-bottom: 0; }
+.banner.chant.rl .syl { background: rgba(42, 26, 36, .85); padding: calc(2px * var(--z)) calc(6px * var(--z)); border: calc(1px * var(--z)) solid #f2c46a; white-space: nowrap; }
+.banner.chant.rl span { font-size: calc(12px * var(--z)); animation: none; transform: none; margin: 0 calc(.5px * var(--z)); }
+.banner.chant.rl.red span { color: #ff3a46 !important; }

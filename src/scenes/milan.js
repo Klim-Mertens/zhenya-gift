@@ -111,7 +111,7 @@ class MilanScene extends Phaser.Scene {
   leave() {
     this.zh.frozen = true; UI.goal("");
     this.cameras.main.fadeOut(600, 0, 0, 0);
-    this.time.delayedCall(650, () => this.scene.start("duomo"));
+    this.time.delayedCall(650, () => this.scene.start("transit", { route: "metro", next: "duomo" }));
   }
   update(time, dt) {
     this.zh.update(dt); this.inter.update();

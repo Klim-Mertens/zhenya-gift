@@ -9,7 +9,7 @@
     type: Phaser.AUTO, parent: "stage", width: 320, height: 180, zoom: z, pixelArt: true, roundPixels: true, backgroundColor: "#0d0b12",
     scale: { mode: Phaser.Scale.NONE },
     audio: { noAudio: true },                       // звук свой, через Sound
-    scene: [BootScene, TitleScene, HomeScene, PackScene, StationScene, RideScene, MilanScene, DuomoScene, KitchenScene, RunScene, MatchScene, DuelScene, StreetScene, StudioScene, DriveScene, SunsetScene]
+    scene: [BootScene, TitleScene, HomeScene, PackScene, StationScene, RideScene, MilanScene, DuomoScene, KitchenScene, RunScene, MatchScene, DuelScene, StreetScene, StudioScene, DriveScene, SunsetScene, TransitScene, RedLightScene]
   });
   window.addEventListener("resize", () => { const nz = zoomFor(); if (nz !== z) { z = nz; applyZoom(z); game.scale.setZoom(z); } });
   // Кнопка и клавиша звука
@@ -21,5 +21,11 @@
   window.addEventListener("keydown", () => Sound.unlock(), { once: true });
   UI.bindClick();
   window.__game = game;
+  // фон-звуки окружения для каждой сцены
+  const AMB = { home: "home", station: "station", milan: "milan", duomo: "duomo", kitchen: "kitchen", run: "park", match: "stadium", duel: "stadium",
+    street: "street", drive: "hills", sunset: "sunset", transit: "milan", redlight: "park" };
+  const hookAmb = () => game.scene.scenes.forEach(sc => sc.sys.events.on("create", () => Sound.ambient(AMB[sc.scene.key] || null)));
+  game.isBooted ? hookAmb() : game.events.once("ready", hookAmb);
+  Pause.init(game);
   if (window.Dev) Dev.init(game);   // меню разработчика (временно)
 })();

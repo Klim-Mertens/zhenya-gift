@@ -31,6 +31,6 @@ class BootScene extends Phaser.Scene {
     UI.speaker("le", "Лера", People.portrait(P3.le_run.front[0]), "#8ab8f0");
     // ?scene=home|pack|station|ride — для проверки отдельных сцен
     const q = new URLSearchParams(location.search).get("scene");
-    this.scene.start(q && ["home", "pack", "station", "ride", "milan", "duomo", "kitchen", "run", "match", "duel", "street", "studio", "drive", "sunset"].includes(q) ? q : "title");
+    this.scene.start(q && ["home", "pack", "station", "ride", "milan", "duomo", "kitchen", "run", "match", "duel", "street", "studio", "drive", "sunset", "transit", "redlight"].includes(q) ? q : "title");
   }
 }

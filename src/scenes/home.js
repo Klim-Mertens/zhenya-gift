@@ -4,7 +4,7 @@ class HomeScene extends Phaser.Scene {
   constructor() { super("home"); }
   init(data) { this.packed = !!(data && data.packed); }
   create() {
-    Save.store("home"); Sound.play("winter"); UI.goal("");
+    Save.store("home", this.packed ? { packed: true } : {}); Sound.play("winter"); UI.goal("");
     this.cameras.main.fadeIn(500, 0, 0, 0);
     const draw = HomeArt.create();
     World.backdrop(this, "home_bg", (g, t) => { draw(g, t); this.garland(g, t); });

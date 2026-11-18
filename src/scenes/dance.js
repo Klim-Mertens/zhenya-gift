@@ -137,8 +137,10 @@ class StudioScene extends Phaser.Scene {
     const acc = this.acc, need = this.L.need, pct = Math.round(acc * 100);
     const grade = acc >= .92 ? "S" : acc >= .8 ? "A" : acc >= .68 ? "B" : "C";
     Sound.play("summer");
-    if (acc < need) {
-      this.fails++; Sound.sfx("wrong");
+    if (acc < need) this.fails++;
+    if (acc < need && await UI.offerSkip(this.fails, "танец")) this.skipped = true;
+    else if (acc < need) {
+      Sound.sfx("wrong");
       await UI.say([
         { who: "da", text: `${pct}% — неплохо для первого раза! Но я знаю, ты можешь лучше.` },
         { who: "da", text: `Сделаем чуть проще. ${this.L.name}: ${this.fails === 1 ? "убираю быстрые шаги" : this.fails === 2 ? "ещё меньше движений, без двойных поз" : "медленно и спокойно, только главные движения"}. Слушай бочку: стрелки приходят ровно на удар!` }
@@ -147,9 +149,9 @@ class StudioScene extends Phaser.Scene {
       this.startSong(); return;
     }
     Sound.sfx("done"); this.daPose = "frame"; this.zhPose = "frame"; this.zhPoseT = 3;
-    await UI.banner(`<div class="syl"><span>${grade}</span></div>`, "chant", 1400);
+    await UI.banner(`<div class="syl"><span>${this.skipped ? "★" : grade}</span></div>`, "chant", 1400);
     await UI.say([
-      { who: "da", text: `Брава, Женя! ${pct}% точности, лучшая серия — ${this.best}. ${grade === "S" ? "Это уровень сцены!" : "Ты прирождённая танцовщица!"}` },
+      this.skipped ? { who: "da", text: "Брава, Женя! Танец — это не про точность, а про настроение. А настроение у тебя огонь!" } : { who: "da", text: `Брава, Женя! ${pct}% точности, лучшая серия — ${this.best}. ${grade === "S" ? "Это уровень сцены!" : "Ты прирождённая танцовщица!"}` },
       { who: "le", text: "Женя, это было огонь! Я бы так не смогла, у меня ноги только для мяча." },
       { who: "zhs", text: "Ноги не чувствую, но это было круто! Дана, можно я буду приходить к тебе на занятия?" },
       { who: "da", text: "Конечно! Vogue по вторникам, High Heels по четвергам. Каблуки свои приноси!" }
@@ -157,7 +159,7 @@ class StudioScene extends Phaser.Scene {
     Save.store("studio");
     await UI.card("Глава 3 пройдена", "Танцы у Даны ★", 3000);
     await UI.card("Глава 4", "Закат с Лоренцо", 2600);
-    this.scene.start("drive");
+    this.scene.start("transit", { route: "hills", next: "drive" });
   }
   // ---------- отрисовка ----------
   draw(g, t) {

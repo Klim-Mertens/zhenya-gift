@@ -196,6 +196,7 @@ class KitchenScene extends Phaser.Scene {
   }
   // ---------- застолье ----------
   async feast() {
+    Save.store("kitchen", { feast: true });   // автосохранение: при «Продолжить» сразу к застолью
     const cam = this.cameras.main;
     cam.fadeOut(300, 0, 0, 0); await World.wait(this, 320);
     this.na.spr.setPosition(122, 112); this.gi.spr.setPosition(200, 112); this.zh.spr.setPosition(161, 112);
@@ -244,6 +245,6 @@ class KitchenScene extends Phaser.Scene {
     Save.store("run");
     await UI.card("Глава 2", "Лера и футбол · на следующее утро", 2600);
     this.cameras.main.fadeOut(700, 0, 0, 0);
-    this.time.delayedCall(750, () => this.scene.start("run"));
+    this.time.delayedCall(750, () => this.scene.start("transit", { route: "walk", next: "run" }));
   }
 }
