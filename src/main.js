@@ -21,4 +21,5 @@
   window.addEventListener("keydown", () => Sound.unlock(), { once: true });
   UI.bindClick();
   window.__game = game;
+  if (window.Dev) Dev.init(game);   // меню разработчика (временно)
 })();

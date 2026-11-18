@@ -74,3 +74,20 @@ body { display: grid; place-items: center; font-family: "Tiny5", monospace; colo
 @keyframes blinkf { 50% { opacity: .35; } }
 /* на кухне подсказка поднимается над полкой с продуктами, чтобы не закрывать их */
 #hint.high { bottom: calc(32px * var(--z)); }
+
+/* ---- Меню разработчика (временное) ---- */
+#devbtn { position: absolute; right: calc(18px * var(--z)); top: calc(4px * var(--z)); height: calc(12px * var(--z)); padding: 0 calc(3px * var(--z));
+  font: inherit; font-size: calc(5px * var(--z)); color: #9ae0ff; background: #1a2a3a; border: calc(1px * var(--z)) solid #4a8ab0; cursor: pointer; pointer-events: auto; opacity: .6; z-index: 30; }
+#devbtn:hover { opacity: 1; }
+#dev { position: absolute; inset: 0; display: grid; place-items: center; background: #0d0b12cc; pointer-events: auto; z-index: 40; }
+#dev[hidden] { display: none; }
+#dev .dbox { width: calc(300px * var(--z)); max-height: calc(166px * var(--z)); overflow-y: auto; background: #1e1628; border: calc(1px * var(--z)) solid #9ae0ff; padding: calc(4px * var(--z)) calc(6px * var(--z)); }
+#dev .dtitle { font-size: calc(8px * var(--z)); color: #9ae0ff; margin-bottom: calc(2px * var(--z)); }
+#dev .dchap { font-size: calc(6px * var(--z)); color: #f2c46a; margin-top: calc(4px * var(--z)); }
+#dev .ditem { display: block; width: 100%; text-align: left; font: inherit; font-size: calc(6px * var(--z)); color: #fff4dc; background: none; border: 0; padding: calc(1px * var(--z)) calc(4px * var(--z)); cursor: pointer; }
+#dev .ditem.on { background: #c8402a; }
+#dev .dfoot { font-size: calc(5px * var(--z)); color: #a8b8d0; margin-top: calc(4px * var(--z)); }
+#dev .dcols { columns: 2; column-gap: calc(8px * var(--z)); }
+#dev .dgrp { break-inside: avoid; }
+#dev .dchap { margin-top: calc(2px * var(--z)) !important; }
+#dev .dkeys { float: right; font-size: calc(5px * var(--z)); color: #a8b8d0; margin-top: calc(2px * var(--z)); }

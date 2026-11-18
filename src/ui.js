@@ -6,7 +6,7 @@ window.UI = (() => {
   const speakers = {};
   // В пиксельном шрифте «ёлочки» похожи на <<, поэтому меняем их на обычные кавычки
   const clean = t => String(t || "").replace(/[«»]/g, '"');
-  let busy = false, advance = null;
+  let busy = false, advance = null, typeTick = null, rulesDone = null;
   function speaker(id, name, portraitCanvas, color) { speakers[id] = { name, cv: portraitCanvas, color }; }
   // Нажатие пробела / Enter / E / клика продвигает диалог
   function onAdvance() { if (advance) advance(); }
@@ -28,7 +28,7 @@ window.UI = (() => {
         textEl.textContent = ""; more.hidden = true;
         const full = clean(L.text); let n = 0, done = false;
         const pitch = { zh: 1.3, mama: 1.15, papa: .7 }[String(L.who).replace(/w$/, "")] || 1;
-        const tick = setInterval(() => {
+        clearInterval(typeTick); const tick = typeTick = setInterval(() => {
           n++; textEl.textContent = full.slice(0, n);
           if (n % 2 === 0 && full[n - 1] !== " ") Sound.sfx("blip", pitch);
           if (n >= full.length) finish();
@@ -74,11 +74,18 @@ window.UI = (() => {
     });
     const f = document.createElement("div"); f.className = "rfoot"; f.textContent = clean(foot); box.appendChild(f);
     return new Promise(resolve => {
-      const done = e => { if (e.type === "keydown" && !["Space", "Enter", "NumpadEnter"].includes(e.code)) return; e.preventDefault(); window.removeEventListener("keydown", done); el.removeEventListener("pointerdown", done);
+      const done = rulesDone = e => { if (e.type === "keydown" && !["Space", "Enter", "NumpadEnter"].includes(e.code)) return; e.preventDefault(); window.removeEventListener("keydown", done); el.removeEventListener("pointerdown", done); rulesDone = null;
         Sound.sfx("select"); el.hidden = true; busy = false; setTimeout(resolve, 50); };
       setTimeout(() => { window.addEventListener("keydown", done); el.addEventListener("pointerdown", done); }, 400);
     });
   }
   function hint(text) { const el = $("hint"); el.textContent = clean(text); el.hidden = !text; }
-  return { rules, portrait: id => speakers[id] && speakers[id].cv, speaker, say, goal, toast, banner, card, hint, bindClick, get busy() { return busy; } };
+  // Сброс всего интерфейса (для меню разработчика: прыжок в другую сцену посреди диалога)
+  function reset() {
+    clearInterval(typeTick); advance = null; busy = false;
+    if (rulesDone) { window.removeEventListener("keydown", rulesDone); const r = $("rules"); if (r) r.removeEventListener("pointerdown", rulesDone); rulesDone = null; }
+    ["dialog", "rules", "banner", "card", "toast", "title"].forEach(id => { const el = $(id); if (el) el.hidden = true; });
+    goal(""); hint(""); const h = $("hint"); if (h) h.classList.remove("high");
+  }
+  return { rules, reset, portrait: id => speakers[id] && speakers[id].cv, speaker, say, goal, toast, banner, card, hint, bindClick, get busy() { return busy; } };
 })();

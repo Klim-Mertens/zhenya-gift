@@ -6,6 +6,7 @@
 "use strict";
 class DriveScene extends Phaser.Scene {
   constructor() { super("drive"); }
+  init(data) { this.devData = data || {}; }
   // уровни: T — секунд до заката, w — ширина дороги, obs — сколько препятствий (доля)
   static LEVELS = [
     { T: 72, w: 70, obs: 1 }, { T: 95, w: 78, obs: .75 }, { T: 110, w: 86, obs: .5 }, { T: 135, w: 96, obs: .3 }
@@ -18,7 +19,7 @@ class DriveScene extends Phaser.Scene {
     const A = LorenzoArt;
     this.img = { car: A.car(false), brake: A.car(true), goat: [A.goat(0), A.goat(1)], cyclist: [A.cyclist(0), A.cyclist(1)], vespa: A.vespa(),
       flowers: ["#f4f0e8", "#ff9ad0", "#f2d23a"].map(A.flower), grass: A.grassTile(), cypress: A.cypress(), olive: A.olive(), vines: A.vines(), lavender: A.lavender(), house: A.house(), rock: A.rock() };
-    this.fails = 0; this.D = 5200; this.CY = 138; this.state = "intro";
+    this.fails = (this.devData && this.devData.fails) || 0; this.D = 5200; this.CY = 138; this.state = "intro";
     this.keys = this.input.keyboard.addKeys("UP,DOWN,LEFT,RIGHT,W,A,S,D");
     this.reset();
     World.backdrop(this, "drive_bg", (g, t) => this.draw(g, t), -1000);

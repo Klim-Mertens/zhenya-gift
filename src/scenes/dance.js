@@ -6,6 +6,7 @@
 "use strict";
 class StudioScene extends Phaser.Scene {
   constructor() { super("studio"); }
+  init(data) { this.devData = data || {}; }
   create() {
     Save.store("studio"); Sound.play("summer"); UI.goal(""); UI.hint("");
     this.cameras.main.fadeIn(600, 0, 0, 0);
@@ -23,7 +24,7 @@ class StudioScene extends Phaser.Scene {
     this.daBlink = DanceArt.pose(D.blink, "hip", D.skin, D.skinD, tail);
     this.arrows = {}; ["left", "down", "up", "right"].forEach(d => ["fill", "ring", "glow"].forEach(m => { this.arrows[d + m] = DanceArt.arrow(d, m); }));
     this.LANES = ["left", "down", "up", "right"]; this.LX = 190; this.LW = 29; this.HIT_Y = 22; this.PXB = 58;   // пикселей на долю
-    this.state = "intro"; this.zhPose = "idle"; this.zhPoseT = 0; this.daPose = "hip"; this.fails = 0;
+    this.state = "intro"; this.zhPose = "idle"; this.zhPoseT = 0; this.daPose = "hip"; this.fails = (this.devData && this.devData.fails) || 0;
     this.fx = []; this.press = { left: 0, down: 0, up: 0, right: 0 };
     World.backdrop(this, "studio_bg", (g, t) => this.draw(g, t), -1000);
     const MAP = { ArrowLeft: "left", KeyA: "left", ArrowDown: "down", KeyS: "down", ArrowUp: "up", KeyW: "up", ArrowRight: "right", KeyD: "right" };

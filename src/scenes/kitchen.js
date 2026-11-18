@@ -7,6 +7,7 @@
 "use strict";
 class KitchenScene extends Phaser.Scene {
   constructor() { super("kitchen"); }
+  init(data) { this.devData = data || {}; }
   create() {
     Save.store("kitchen"); Sound.play("cucina"); UI.goal(""); UI.hint("");
     this.cameras.main.fadeIn(600, 0, 0, 0);
@@ -32,7 +33,7 @@ class KitchenScene extends Phaser.Scene {
     const hintEl = document.getElementById("hint"); if (hintEl) hintEl.classList.add("high");
     window.addEventListener("keydown", kd); this.events.once("shutdown", () => { window.removeEventListener("keydown", kd); UI.hint(""); if (hintEl) hintEl.classList.remove("high"); });
     // ?scene=kitchen&feast — сразу к застолью (для проверки)
-    if (new URLSearchParams(location.search).has("feast")) { this.dishes = ["dolma", "carbonara", "borsch"]; this.time.delayedCall(700, () => this.feast()); }
+    if (new URLSearchParams(location.search).has("feast") || (this.devData && this.devData.feast)) { this.dishes = ["dolma", "carbonara", "borsch"]; this.time.delayedCall(700, () => this.feast()); }
     else this.time.delayedCall(700, () => this.run());
   }
   shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
