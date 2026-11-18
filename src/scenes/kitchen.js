@@ -1,6 +1,9 @@
-/* Глава 1, часть 3: кухня Нарины. Кулинарный квест: Нарина просит продукты для долмы,
-   Джан — для карбонары (только по-итальянски!). Женя подаёт нужное с полки мышкой.
-   Потом застолье: мамин борщ на стол и водка для Джана. */
+/* Глава 1, часть 3: кухня Нарины. «Кухонная война»: две кухни сразу.
+   Нарина готовит армянскую долму (слева, у плиты), Джан — итальянскую карбонару (справа).
+   Оба просят продукты одновременно: над головой — картинка нужного продукта и полоска терпения.
+   Женя ходит по кухне (стрелки/WASD), берёт продукт с полки внизу (пробел) и несёт нужному повару (пробел).
+   Не успела — повар ворчит, минус звёздочка; неправильный продукт — смешная реакция и тоже минус.
+   Потом мамин борщ из чемодана на стол и застолье с водкой для Джана. */
 "use strict";
 class KitchenScene extends Phaser.Scene {
   constructor() { super("kitchen"); }
@@ -8,117 +11,100 @@ class KitchenScene extends Phaser.Scene {
     Save.store("kitchen"); Sound.play("cucina"); UI.goal(""); UI.hint("");
     this.cameras.main.fadeIn(600, 0, 0, 0);
     const art = MilanoArt.kitchen();
-    this.dishes = [];       // что уже стоит на столе
-    this.shelfOn = false; this.hover = -1; this.ask = null; this.glasses = 0;
-    World.backdrop(this, "ki_back", (g, t) => { art.back(g, t); this.drawTable(g, t); }, -1000);
-    World.backdrop(this, "ki_front", (g, t) => this.drawShelf(g, t), 5000);
-    this.na = World.npc(this, "na_front_0", "na_blink", 160, 104, .2);
-    this.gi = World.npc(this, "gi_idle", "gi_blink", 252, 104, 1.1);
-    this.zh = World.npc(this, "zh_summer_front_0", "zh_summer_blink", 60, 128, 2.3);
-    this.icons = Food.LIST.map(f => Object.assign({}, f)); this.shuffle();
-    this.input.on("pointermove", p => { const i = this.slotAt(p.worldX, p.worldY); if (i !== this.hover) { this.hover = i; UI.hint(i >= 0 && this.shelfOn ? this.icons[i].ru : ""); } });
-    this.input.on("pointerdown", p => { if (!this.shelfOn || UI.busy) return; const i = this.slotAt(p.worldX, p.worldY); if (i >= 0) this.pick(i); });
+    this.dishes = []; this.glasses = 0; this.state = "intro";
+    this.pantry = Food.LIST.map(f => f.id); this.shuffle(this.pantry);
+    World.backdrop(this, "ki_back", (g, t) => art.back(g, t), -1000);
+    // стол — отдельная картинка с глубиной: кто стоит за столом (выше), того стол закрывает по пояс
+    const snap = PK.mk(320, 180); art.back(snap.getContext("2d"), 0);
+    const tbl = PK.mk(140, 44); tbl.getContext("2d").drawImage(snap, 90, 108, 140, 44, 0, 0, 140, 44);
+    if (this.textures.exists("ki_table")) this.textures.remove("ki_table");
+    this.textures.addCanvas("ki_table", tbl); this.add.image(90, 108, "ki_table").setOrigin(0).setDepth(140);
+    World.backdrop(this, "ki_dishes", (g, t) => this.drawTable(g, t), 141);
+    World.backdrop(this, "ki_front", (g, t) => this.drawFront(g, t), 5000);
+    this.na = World.npc(this, "na_front_0", "na_blink", 150, 104, .2);
+    this.gi = World.npc(this, "gi_idle", "gi_blink", 262, 104, 1.1);
+    this.zhP = World.player(this, World.frameKeys("zh_summer"), 60, 128); this.zhP.speed = 82; this.zhP.frozen = true;
+    this.zh = this.zhP;                                  // для застолья: у игрока тоже есть spr
+    this.zhP.blockers = [[0, 0, 118, 82], [118, 0, 202, 100], [143, 96, 14, 12], [255, 96, 14, 12], [94, 116, 134, 26], [80, 120, 14, 16], [228, 120, 14, 16],
+      [12, 128, 20, 16], [0, 157, 320, 23], [0, 0, 3, 180], [317, 0, 3, 180]];
+    this.carry = null; this.stars = 3; this.mistakes = 0; this.timeouts = 0;
+    const kd = e => { if (["Space", "KeyE", "Enter"].includes(e.code) && (this.state === "play" || this.state === "borsch") && !UI.busy) { e.preventDefault(); this.act(); } };
+    const hintEl = document.getElementById("hint"); if (hintEl) hintEl.classList.add("high");
+    window.addEventListener("keydown", kd); this.events.once("shutdown", () => { window.removeEventListener("keydown", kd); UI.hint(""); if (hintEl) hintEl.classList.remove("high"); });
     // ?scene=kitchen&feast — сразу к застолью (для проверки)
     if (new URLSearchParams(location.search).has("feast")) { this.dishes = ["dolma", "carbonara", "borsch"]; this.time.delayedCall(700, () => this.feast()); }
     else this.time.delayedCall(700, () => this.run());
   }
-  // ---------- полка с продуктами внизу экрана ----------
-  slotAt(x, y) { if (y < 154 || y > 176) return -1; const i = Math.floor((x - 5) / 21); return i >= 0 && i < this.icons.length && (x - 5) % 21 < 19 ? i : -1; }
-  drawShelf(g, t) {
-    if (!this.shelfOn || !this.gi) return;
-    const R = PK.R, OL = RK.OL, s = t / 1000;
-    R(g, 0, 150, 320, 30, "#8a5a32"); R(g, 0, 150, 320, 2, "#b07a48"); R(g, 0, 177, 320, 3, "#5a3a20"); RK.box(g, 0, 150, 320, 30, OL);
-    this.icons.forEach((f, i) => { const x = 6 + i * 21, y = 156, hov = i === this.hover, used = f.used;
-      R(g, x - 1, y - 1, 19, 19, hov ? "#f2d23a" : "#6a4024"); R(g, x, y, 17, 17, used ? "#7a5030" : "#f4e8d0");
-      if (!used) g.drawImage(this.textures.get(`food_${f.id}`).getSourceImage(), x, y + (hov ? -1 : 0)); });
-    // восклицательный знак над тем, кто сейчас просит
-    if (this.ask) { const sp = this.ask.who === "na" ? this.na.spr : this.gi.spr, by = sp.y - 34 + Math.round(Math.sin(s * 6));
-      R(g, sp.x - 5, by, 11, 11, "#fbf8f0"); RK.box(g, sp.x - 5, by, 11, 11, OL); R(g, sp.x - 1, by + 11, 3, 2, "#fbf8f0");
-      g.drawImage(this.textures.get(`food_${this.ask.id}`).getSourceImage(), sp.x - 4, by + 1, 9, 9);
-      if (this.ask.who === "gi" && !this.ask.revealed) { R(g, sp.x - 4, by + 1, 9, 9, "#fbf8f0"); StationArt.text(g, "?", sp.x - 1, by + 3, OL); R(g, sp.x - 1, by + 3, 3, 1, OL); R(g, sp.x + 1, by + 4, 1, 2, OL); R(g, sp.x, by + 6, 1, 1, OL); R(g, sp.x, by + 8, 1, 1, OL); } }
-  }
-  drawTable(g, t) {
-    const pos = { dolma: [104, 118], carbonara: [148, 120], borsch: [184, 118] };
-    this.dishes.forEach(k => { const [x, y] = pos[k]; g.drawImage(this.textures.get(`dish_${k}`).getSourceImage(), x, y); });
-    if (this.vodka) { const R = PK.R; R(g, 212, 116, 6, 14, "#e8f4f8"); R(g, 213, 114, 4, 2, "#d8202c"); R(g, 213, 121, 4, 4, "#f4f0e8"); RK.box(g, 212, 116, 6, 14, RK.OL);
-      for (let i = 0; i < this.glasses; i++) { const x = [126, 165, 204][i]; R(g, x, 132, 4, 5, "#d8eef4"); R(g, x, 134, 4, 3, "#ffffff"); RK.box(g, x, 132, 4, 5, RK.OL); } }
-  }
-  // ---------- квест: последовательность просьб ----------
+  shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  // ---------- где стоит Женя ----------
+  slotUnder() { const x = this.zhP.spr.x, y = this.zhP.spr.y; if (y < 144) return -1; const i = Math.floor((x - 5) / 21); return i >= 0 && i < this.pantry.length ? i : -1; }
+  chefNear() { const x = this.zhP.spr.x, y = this.zhP.spr.y; for (const c of this.chefs || []) if (Math.abs(x - c.npc.spr.x) < 22 && y < 120) return c; return null; }
+  tableNear() { const x = this.zhP.spr.x, y = this.zhP.spr.y; return x > 84 && x < 236 && (y < 112 || y > 144); }
+  // ---------- правила и запуск ----------
   async run() {
     await UI.say([
       { who: "na", text: "Добро пожаловать к нам! Разувайся, мой руки и становись помощницей." },
       { who: "gi", text: "Cucina! La guerra comincia!" },
-      { who: "na", text: "«Кухонная война начинается». Он всегда так говорит, когда мы готовим одновременно." },
-      { who: "na", text: "Сначала долма! Я говорю, что нужно, а ты подаёшь с полки. Наводи мышку, там подписи." }
+      { who: "na", text: "«Кухонная война начинается». Мы готовим одновременно: я — долму, он — карбонару." },
+      { who: "na", text: "Продукты на полке внизу. Носи нам то, что нарисовано над головой. И побыстрее, мы голодные!" }
     ]);
     const food = id => this.textures.get(`food_${id}`).getSourceImage();
-    await UI.rules("Помоги на кухне!", [
-      { icons: ["leaves", "rice", "onion"].map(food), text: "Внизу полка с продуктами. Наведи мышку — появится подпись." },
-      { icons: [this.textures.get("na_front_0").getSourceImage()], text: "Нарина просит продукт по-русски — кликни по нужному." },
-      { icons: [this.textures.get("gi_idle").getSourceImage()], text: "Джан просит только по-итальянски! Над головой у него будет «?». Ошиблась — Нарина переведёт." },
-      { icons: ["pineapple", "ketchup"].map(food), text: "Продукты каждый раз перемешиваются. Ананас в карбонару лучше не класть..." }
-    ], "Пробел или клик — начать");
-    this.shelfOn = true;
-    await this.round("na", ["leaves", "mince", "rice", "onion", "herbs", "matsun"], id => `Нарина просит: ${Food.byId(id).ru}`);
-    this.shelfOn = false; this.ask = null; UI.goal("");
-    await this.cook("dolma", [
-      { who: "na", text: "Заворачиваем фарш с рисом в листики... Вот так, плотненько, как маленькие голубцы." },
-      { who: "zhs", text: "Голубцы-малыши! Мама бы оценила." },
-      { who: "na", text: "Долма готова! Мацун сверху, и это лучшее, что ты пробовала. Обещаю!" }
+    await UI.rules("Кухонная война!", [
+      { keys: ["←", "↑", "↓", "→"], icons: [this.textures.get("zh_summer_side_0").getSourceImage()], text: "Стрелки или WASD — ходить по кухне." },
+      { keys: ["Пробел"], icons: ["rice", "eggs", "onion"].map(food), text: "Встань у полки внизу и нажми пробел — возьмёшь продукт (название видно в подсказке). Ещё раз у полки — поменяешь." },
+      { icons: [this.textures.get("na_front_0").getSourceImage(), this.textures.get("gi_idle").getSourceImage()], text: "Над Нариной и Джаном — картинка того, что им нужно сейчас, и полоска терпения. Подойди к повару и нажми пробел — отдашь продукт." },
+      { icons: ["cream", "pineapple"].map(food), text: "Готовят оба сразу — успевай к обоим! Не успела или принесла не то — минус звёздочка. Сливки и ананас Джану лучше не носить..." }
     ]);
-    await UI.say([
-      { who: "gi", text: "Adesso tocca a me! Carbonara!" },
-      { who: "na", text: "Теперь его очередь. Он будет просить по-итальянски. Не угадаешь — переведу!" }
-    ]);
-    this.shelfOn = true;
-    await this.round("gi", ["spaghetti", "guanciale", "eggs", "pecorino", "pepper"], id => `Джан просит: ${Food.byId(id).it}!`);
-    this.shelfOn = false; this.ask = null; UI.goal("");
-    await this.cook("carbonara", [
-      { who: "gi", text: "Guanciale croccante... uova, pecorino... e pepe! Niente panna, MAI!" },
-      { who: "na", text: "Хрустящая щёчка, яйца, сыр и перец. И никаких сливок, никогда!" },
-      { who: "gi", text: "Perfetto! Ка-рбо-на-ра... хо-ро-шо!" }
-    ]);
-    await UI.say([{ who: "na", text: "Стол почти готов. Жень, а ты ничего не привезла из дома? Чего-то русского не хватает!" }]);
-    this.shelfOn = true;
-    await this.round("na", ["borsch"], () => "Что привезла мама? Найди на полке");
-    this.shelfOn = false; this.ask = null; UI.goal("");
-    this.dishes.push("borsch"); Sound.sfx("place");
-    await UI.say([
-      { who: "zhs", text: "Мамин борщ! Ехал со мной двое суток в обнимку с валенками." },
-      { who: "na", text: "Ура! Обожаю твою маму. Передай ей огромное спасибо!" },
-      { who: "gi", text: "Bor-sch... che colore! Красный, как... Ferrari!" }
-    ]);
-    await this.feast();
+    // очереди продуктов (порядок случайный), терпение в секундах
+    this.chefs = [
+      { who: "na", name: "Нарина", npc: this.na, dish: "dolma", queue: this.shuffle(["leaves", "mince", "rice", "onion", "herbs", "matsun"]), max: 24 },
+      { who: "gi", name: "Джан", npc: this.gi, dish: "carbonara", queue: this.shuffle(["spaghetti", "guanciale", "eggs", "pecorino", "pepper"]), max: 20 }
+    ];
+    this.chefs.forEach(c => { c.total = c.queue.length; c.pat = c.max; c.done = false; c.ok = 0; });
+    this.zhP.frozen = false; this.state = "play"; this.announce(this.chefs[1]); this.updGoal();
   }
-  // перемешать продукты на полке (каждый раунд по-новому)
-  shuffle() { const a = this.icons; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
-  // одна серия просьб: ждём правильный клик на каждую
-  round(who, ids, goalText) {
-    this.shuffle(); ids = ids.slice().sort(() => Math.random() - .5);   // и порядок просьб тоже случайный
-    return new Promise(resolve => {
-      let k = 0;
-      const next = () => {
-        if (k >= ids.length) { this.ask = null; this.onPick = null; resolve(); return; }
-        this.ask = { who, id: ids[k], revealed: who !== "gi", miss: 0 };
-        UI.goal(goalText(ids[k]));
-        (who === "na" ? this.na : this.gi).override = null;
-      };
-      this.onPick = async f => {
-        const a = this.ask; if (!a) return;
-        if (f.id === a.id) {
-          Sound.sfx("pick"); f.used = true; this.flyTo(f, who === "na" ? this.na.spr : this.gi.spr);
-          const praise = who === "na" ? ["Умница!", "Да, оно!", "Отлично!", "Ты прирождённый повар!"] : ["Brava!", "Sì, sì!", "Perfetto!", "Bravissima!"];
-          UI.toast(`${who === "na" ? "Нарина" : "Джан"}: ${praise[k % praise.length]}`, 1300);
-          k++; await World.wait(this, 450); next();
-        } else { Sound.sfx("wrong"); a.miss++; await this.wrong(f, a); }
-      };
-      next();
-    });
+  // Джан выкрикивает продукт по-итальянски, а подсказка сразу даёт перевод
+  announce(c) { if (c.who === "gi" && c.queue.length) UI.toast(`Джан: ${Food.byId(c.queue[0]).it}! (это «${Food.byId(c.queue[0]).ru.toLowerCase()}»)`, 2000); }
+  updGoal() {
+    if (this.state === "borsch") { UI.goal(this.carry === "borsch" ? "Неси борщ на стол (подойди к столу, пробел)" : "Найди на полке мамин борщ из чемодана"); return; }
+    const parts = this.chefs.map(c => c.done ? `${c.name}: готово ★` : `${c.name} ждёт: ${Food.byId(c.queue[0]).ru}${c.who === "gi" ? ` (${Food.byId(c.queue[0]).it})` : ""}`);
+    UI.goal(parts.join(" · ") + `  ${"★".repeat(this.stars)}${"☆".repeat(3 - this.stars)}`);
   }
-  pick(i) { const f = this.icons[i]; if (f.used || !this.onPick || this.busyPick) return; this.busyPick = true; Promise.resolve(this.onPick(f)).then(() => { this.busyPick = false; }); }
-  flyTo(f, spr) {
-    const x = 6 + this.icons.indexOf(f) * 21 + 8, img = this.add.image(x, 164, `food_${f.id}`).setDepth(6000);
-    this.tweens.add({ targets: img, x: spr.x, y: spr.y - 18, scale: .6, duration: 420, ease: "Quad.easeIn", onComplete: () => img.destroy() });
+  // ---------- пробел ----------
+  async act() {
+    const slot = this.slotUnder(), chef = this.chefNear();
+    if (this.state === "borsch" && this.carry === "borsch" && this.tableNear()) return this.serveBorsch();
+    if (slot >= 0) {                                       // у полки: взять / поменять
+      const id = this.pantry[slot]; if (this.carry === id) { this.carry = null; Sound.sfx("place"); }
+      else { this.carry = id; Sound.sfx("pick"); }
+      this.updGoal(); return;
+    }
+    if (chef && this.carry && this.state === "play") return this.give(chef);
+    if (chef && !this.carry && this.state === "play" && !chef.done) UI.toast(`${chef.name}: ${chef.who === "gi" ? "Mi serve... " + Food.byId(chef.queue[0]).it + "!" : "Мне нужно: " + Food.byId(chef.queue[0]).ru.toLowerCase() + "!"}`, 1500);
+  }
+  async give(c) {
+    const id = this.carry;
+    if (c.done) { UI.toast(`${c.name}: У меня уже всё готово! Помоги другому.`, 1400); return; }
+    if (id === c.queue[0]) {
+      this.carry = null; c.queue.shift(); c.ok++; c.pat = c.max; Sound.sfx("pick"); this.fly(id, c.npc.spr);
+      const praise = c.who === "na" ? ["Умница!", "Да, оно!", "Отлично!", "Ты прирождённый повар!", "Супер!"] : ["Brava!", "Sì, sì!", "Perfetto!", "Bravissima!", "Molto bene!"];
+      UI.toast(`${c.name}: ${praise[c.ok % praise.length]}`, 1100);
+      if (!c.queue.length) await this.cook(c); else this.announce(c);
+      this.updGoal();
+      if (this.chefs.every(x => x.done)) this.toBorsch();
+      return;
+    }
+    // не то: другому повару — подсказка, иначе — смешная реакция и минус
+    const other = this.chefs.find(x => x !== c && !x.done && x.queue[0] === id);
+    if (other) { UI.toast(`${c.name}: Это не мне — это ждёт ${other.who === "gi" ? "Джан" : "Нарина"}!`, 1500); return; }
+    this.carry = null; Sound.sfx("wrong"); this.loseStar("wrong");
+    await this.wrong({ id }, { who: c.who, id: c.queue[0] });
+    this.updGoal();
+  }
+  loseStar(why) { if (why === "wrong") this.mistakes++; else this.timeouts++; if ((this.mistakes + this.timeouts) % 2 === 0 && this.stars > 1) { this.stars--; UI.toast("−★", 900); } }
+  fly(id, spr) {
+    const img = this.add.image(this.zhP.spr.x, this.zhP.spr.y - 32, `food_${id}`).setDepth(6000);
+    this.tweens.add({ targets: img, x: spr.x, y: spr.y - 18, scale: .6, duration: 380, ease: "Quad.easeIn", onComplete: () => img.destroy() });
   }
   // смешные реакции на неправильные продукты
   async wrong(f, a) {
@@ -129,17 +115,83 @@ class KitchenScene extends Phaser.Scene {
       borsch: [{ who: "na", text: "Борщ — потом, на стол! Это же главное блюдо вечера." }]
     }[f.id];
     if (special) { if (a.who === "gi" || f.id !== "cream") this.gi.override = "gi_wide"; await UI.say(special); this.gi.override = null; }
-    else if (a.who === "na") UI.toast(`Нарина: Не, это не ${Food.byId(a.id).ru.toLowerCase()}. Ищи ещё!`, 1800);
-    else UI.toast(`Джан: No, no! ${Food.byId(a.id).it}!`, 1800);
-    // Джан: после промаха Нарина переводит
-    if (a.who === "gi" && !a.revealed) { a.revealed = true; UI.goal(`Джан просит: ${Food.byId(a.id).it}! (Нарина: это «${Food.byId(a.id).ru.toLowerCase()}»)`); }
+    else if (a.who === "na") UI.toast(`Нарина: Не, это ${Food.byId(f.id).ru.toLowerCase()}. А мне нужно: ${Food.byId(a.id).ru.toLowerCase()}!`, 1900);
+    else UI.toast(`Джан: No, no! ${Food.byId(a.id).it}! (${Food.byId(a.id).ru.toLowerCase()})`, 1900);
   }
-  async cook(kind, lines) {
-    Sound.sfx("place"); this.cameras.main.shake(200, .002);
-    await UI.say(lines);
-    this.dishes.push(kind); Sound.sfx("done");
-    UI.toast(kind === "dolma" ? "Долма готова! ★" : "Карбонара готова! ★", 1600);
-    await World.wait(this, 500);
+  async cook(c) {
+    c.done = true; this.dishes.push(c.dish); Sound.sfx("done"); this.cameras.main.shake(150, .002);
+    await UI.say(c.dish === "dolma" ? [
+      { who: "na", text: "Заворачиваем фарш с рисом в листики... Вот так, плотненько. Долма готова!" },
+      { who: "zhs", text: "Голубцы-малыши! Мама бы оценила." }
+    ] : [
+      { who: "gi", text: "Guanciale croccante, uova, pecorino e pepe! Niente panna, MAI!" },
+      { who: "na", text: "Хрустящая щёчка, яйца, сыр и перец. И никаких сливок! Карбонара готова." }
+    ]);
+    UI.toast(c.dish === "dolma" ? "Долма готова! ★" : "Карбонара готова! ★", 1500);
+  }
+  async toBorsch() {
+    this.state = "borsch"; this.zhP.frozen = true;
+    await UI.say([
+      { who: "na", text: "Обе кухни победили! Жень, а ты ничего не привезла из дома? Чего-то русского не хватает!" },
+      { who: "zhs", text: "Точно! Мамин борщ в чемодане. Сейчас найду на полке!" }
+    ]);
+    this.zhP.frozen = false; this.updGoal();
+  }
+  async serveBorsch() {
+    this.carry = null; this.state = "end"; this.zhP.frozen = true; this.zhP.face("front"); UI.hint("");
+    this.dishes.push("borsch"); Sound.sfx("place");
+    await UI.say([
+      { who: "zhs", text: "Мамин борщ! Ехал со мной двое суток в обнимку с валенками." },
+      { who: "na", text: "Ура! Обожаю твою маму. Передай ей огромное спасибо!" },
+      { who: "gi", text: "Bor-sch... che colore! Красный, как... Ferrari!" }
+    ]);
+    const stars = "★".repeat(this.stars) + "☆".repeat(3 - this.stars);
+    await UI.banner(`<div class="syl"><span>${stars}</span></div>`, "chant", 1500);
+    await this.feast();
+  }
+  // ---------- отрисовка ----------
+  drawTable(g, t) {
+    const pos = { dolma: [104, 118], carbonara: [148, 120], borsch: [184, 118] };
+    this.dishes.forEach(k => { const [x, y] = pos[k]; g.drawImage(this.textures.get(`dish_${k}`).getSourceImage(), x, y); });
+    if (this.vodka) { const R = PK.R; R(g, 212, 116, 6, 14, "#e8f4f8"); R(g, 213, 114, 4, 2, "#d8202c"); R(g, 213, 121, 4, 4, "#f4f0e8"); RK.box(g, 212, 116, 6, 14, RK.OL);
+      for (let i = 0; i < this.glasses; i++) { const x = [126, 165, 204][i]; R(g, x, 132, 4, 5, "#d8eef4"); R(g, x, 134, 4, 3, "#ffffff"); RK.box(g, x, 132, 4, 5, RK.OL); } }
+  }
+  drawFront(g, t) {
+    if (!this.zhP) return;
+    const R = PK.R, OL = RK.OL, s = t / 1000, tex = id => this.textures.get(`food_${id}`).getSourceImage();
+    if (this.state === "play" || this.state === "borsch") {
+      // полка с продуктами внизу; ячейка под Женей подсвечена
+      const cur = this.slotUnder();
+      R(g, 0, 152, 320, 28, "#8a5a32"); R(g, 0, 152, 320, 2, "#b07a48"); R(g, 0, 177, 320, 3, "#5a3a20"); RK.box(g, 0, 152, 320, 28, OL);
+      this.pantry.forEach((id, i) => { const x = 6 + i * 21, y = 157, on = i === cur;
+        R(g, x - 1, y - 1, 19, 19, on ? "#f2d23a" : "#6a4024"); R(g, x, y, 17, 17, "#f4e8d0"); g.drawImage(tex(id), x, y + (on ? -1 : 0)); });
+      // подсказка у полки / у повара
+      const c = this.chefNear(), serve = this.state === "borsch" && this.carry === "borsch" && this.tableNear();
+      const hint = serve ? "Пробел — поставить борщ на стол" : cur >= 0 ? `Пробел — ${this.carry === this.pantry[cur] ? "положить обратно" : "взять"}: ${Food.byId(this.pantry[cur]).ru}`
+        : c && this.carry && this.state === "play" ? `Пробел — отдать: ${c.name}` : "";
+      if (hint !== this.lastHint) { this.lastHint = hint; UI.hint(hint); }
+    }
+    // продукт в руках над головой
+    if (this.carry && this.zhP.spr.visible) { const x = Math.round(this.zhP.spr.x) - 8, y = Math.round(this.zhP.spr.y) - 46 + Math.round(Math.sin(s * 5));
+      R(g, x - 1, y - 1, 18, 18, "#fbf8f0"); RK.box(g, x - 1, y - 1, 18, 18, OL); g.drawImage(tex(this.carry), x, y); }
+    // заказы над поварами: картинка + полоска терпения
+    if (this.state === "play" && this.chefs) this.chefs.forEach(c => { if (c.done) return;
+      const sp = c.npc.spr, w = 22, x = Math.round(sp.x - w / 2), y = Math.round(sp.y - (c.who === "gi" ? 58 : 52)) + Math.round(Math.sin(s * 4 + (c.who === "gi" ? 1 : 0)));
+      const k = c.pat / c.max, col = k > .5 ? "#5ad86a" : k > .25 ? "#f2c23a" : "#e84a4a", shake = k < .25 ? Math.round(Math.sin(s * 30)) : 0;
+      R(g, x + shake, y, w, 22, "#fbf8f0"); RK.box(g, x + shake, y, w, 22, OL); R(g, x + 9 + shake, y + 22, 4, 2, "#fbf8f0");
+      g.drawImage(tex(c.queue[0]), x + 3 + shake, y + 1);
+      R(g, x + 2, y + 18, w - 4, 2, "#3a3048"); R(g, x + 2, y + 18, Math.round((w - 4) * k), 2, col);
+      // сколько продуктов уже отдано: кружочки справа от пузыря
+      for (let i = 0; i < c.total; i++) { const px = x + w + 2, py = y + 1 + i * 3.5; R(g, px, Math.round(py), 3, 3, OL); R(g, px + 1, Math.round(py) + 1, 1, 1, i < c.ok ? "#5ad86a" : "#fbf8f0"); } });
+  }
+  // ---------- терпение поваров ----------
+  update(time, dt) {
+    this.na.update(); this.gi.update(); this.zhP.update(dt);
+    if (this.state !== "play" || UI.busy) return;
+    this.chefs.forEach(c => { if (c.done) return; c.pat -= dt / 1000;
+      if (c.pat <= 0) { c.pat = c.max; Sound.sfx("wrong"); this.loseStar("time");
+        UI.toast(c.who === "na" ? `Нарина: Жень, ну где ${Food.byId(c.queue[0]).ru.toLowerCase()}? Долма стынет!` : `Джан: Allora?! ${Food.byId(c.queue[0]).it}! (${Food.byId(c.queue[0]).ru.toLowerCase()})`, 2000);
+        this.updGoal(); } });
   }
   // ---------- застолье ----------
   async feast() {
@@ -193,5 +245,4 @@ class KitchenScene extends Phaser.Scene {
     this.cameras.main.fadeOut(700, 0, 0, 0);
     this.time.delayedCall(750, () => this.scene.start("run"));
   }
-  update() { this.na.update(); this.gi.update(); this.zh.update(); }
 }

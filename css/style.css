@@ -72,3 +72,5 @@ body { display: grid; place-items: center; font-family: "Tiny5", monospace; colo
 #rules .rtext { font-size: calc(6px * var(--z)); line-height: 1.35; flex: 1; }
 #rules .rfoot { margin-top: calc(5px * var(--z)); text-align: center; font-size: calc(6px * var(--z)); color: #f2c46a; animation: blinkf 1s steps(2) infinite; }
 @keyframes blinkf { 50% { opacity: .35; } }
+/* на кухне подсказка поднимается над полкой с продуктами, чтобы не закрывать их */
+#hint.high { bottom: calc(32px * var(--z)); }

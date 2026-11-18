@@ -11,7 +11,7 @@ class RunScene extends Phaser.Scene {
     this.bg = ParkArt.sempione();
     this.G = ParkArt.GROUND;
     this.GAP0 = 1400; this.WIN = 60; this.LOSE = 1900;  // отставание от Леры (в пикселях пути)
-    this.state = "intro"; this.off = 0; this.leX = 360;
+    this.state = "intro"; this.off = 0; this.leX = -24;   // Лера догоняет Женю сзади (слева) и обгоняет
     this.reset();
     this.keys = { up: false, down: false }; this.lastSide = null;
     World.backdrop(this, "run_bg", (g, t) => this.draw(g, t), -1000);
@@ -34,7 +34,7 @@ class RunScene extends Phaser.Scene {
   }
   tex(key) { return this.textures.get(key).getSourceImage(); }
   async intro() {
-    // Лера пробегает мимо
+    // Лера выбегает слева, обгоняет Женю и останавливается впереди
     this.state = "intro";
     this.tweens.add({ targets: this, leX: 200, duration: 1600, ease: "Sine.easeOut" });
     await World.wait(this, 1700);
