@@ -20,14 +20,16 @@ class MilanScene extends Phaser.Scene {
     this.zh.blockers = [[0, 0, 320, 80], [72, 100, 36, 10], [16, 104, 20, 14], [264, 118, 46, 32], [118, 96, 4, 18], [178, 96, 4, 18], [doorX + 22, 106, 12, 6], [doorX + 42, 108, 12, 6], [0, 172, 320, 8], [0, 0, 4, 180]];
     this.zh.spr.setAlpha(0); this.zh.frozen = true;
     this.met = false; this.summer = false; const self = this;
+    this.cardImg = Postcards.placeItem(this, "series", 90, 106);
     this.inter = World.interactions(this, this.zh, [
-      { x: 288, y: 156, r: 18, label: "заглянуть в кафе", use: () => UI.say([
+      { x: 288, y: 156, r: 18, label: "заглянуть в кафе", task: "заглянуть в кафе", use: () => UI.say([
         { who: "gi", text: "Un caffè? Espresso! Капучино только утром, dopo pranzo — no, no, no!" },
         { who: "na", text: "Итальянское правило: капучино после обеда не пьют. Джан за это может обидеться." },
         { who: "zhs", text: "Запомню. Буду пить капучино тайно, по-русски." }]) },
-      { x: 26, y: 122, r: 18, label: "посмотреть на лимонное дерево", use: () => UI.say([{ who: this.who(), text: "Настоящие лимоны растут прямо на вокзале! А у нас на вокзале растут только сугробы." }]) },
-      { x: 152, y: 118, r: 18, label: "посмотреть на табличку", use: () => UI.say([{ who: this.who(), text: "Милано Централе. Двое суток, и я в Италии! Мама, наверное, уже третий раз пишет «ну как ты?»." }]) },
+      { x: 26, y: 122, r: 18, label: "посмотреть на лимонное дерево", task: "лимонное дерево", use: () => UI.say([{ who: this.who(), text: "Настоящие лимоны растут прямо на вокзале! А у нас на вокзале растут только сугробы." }]) },
+      { x: 152, y: 118, r: 18, label: "посмотреть на табличку", task: "прочитать табличку", use: () => UI.say([{ who: this.who(), text: "Милано Централе. Двое суток, и я в Италии! Мама, наверное, уже третий раз пишет «ну как ты?»." }]) },
       { get x() { return self.naF ? self.naF.spr.x : doorX + 38; }, get y() { return self.naF ? self.naF.spr.y : 114; }, r: 20, label: "поговорить с Нариной и Джаном", enabled: () => this.met, use: () => this.chat() },
+      { x: 90, y: 118, r: 20, label: "что это на скамейке?", task: "что-то лежит на скамейке", markDy: 30, enabled: () => !this.cardGot, use: () => this.findCard() },
       { x: 314, y: 140, r: 16, label: "пойти к Дуомо", enabled: () => this.met, use: () => this.leave() }
     ]);
     this.chats = 0;
@@ -107,6 +109,15 @@ class MilanScene extends Phaser.Scene {
       [{ who: "gi", text: "Женя... Ру-сси-я... бор-щ? Buono?" }, { who: "zhs", text: "Очень буоно! Мама передала целую банку, вечером попробуешь." }, { who: "gi", text: "Evviva la mamma!" }, { who: "na", text: "«Да здравствует мама!» Он уже её любит, а они даже не знакомы."}]
     ];
     await UI.say(lines[this.chats++ % lines.length]);
+  }
+  async findCard() {
+    this.cardGot = true; this.zh.frozen = true; if (this.cardImg) this.cardImg.destroy();
+    await UI.say([{ who: this.who(), text: "Ой... Это же наш пульт от телевизора! Откуда он в Милане? И к нему приколота открытка..." }]);
+    await Postcards.find(this, "series");
+    await UI.say([{ who: this.who(), text: "Егор! Это от брата. Но как?.." }]);
+    await Postcards.cameo(this, 300, 112, true);
+    await UI.say([{ who: this.who(), text: "Егор?! Там, у выхода!.. Показалось. Или нет?" }]);
+    this.zh.frozen = false;
   }
   leave() {
     this.zh.frozen = true; UI.goal("");

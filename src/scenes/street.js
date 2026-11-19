@@ -12,11 +12,12 @@ class StreetScene extends Phaser.Scene {
     // набережная: сверху дома (кроме двери студии), снизу перила; киоск — препятствие
     this.zh.blockers = [[0, 0, 274, 104], [298, 0, 22, 104], [274, 0, 24, 96], [90, 0, 34, 110], [0, NavigliArt.RAIL - 6, 320, 40], [0, 0, 2, 180], [318, 0, 2, 180]];
     this.leF = World.follower(this, World.frameKeys("le_kit"), this.zh, 4, 126, 22);
-    this.gelato = false;
+    this.gelato = false; this.cardImg = Postcards.placeItem(this, "video", 160, 138);
     this.inter = World.interactions(this, this.zh, [
-      { x: 107, y: 122, r: 24, label: "взять джелато", enabled: () => !this.gelato, use: () => this.buyGelato() },
+      { x: 107, y: 122, r: 24, label: "взять джелато", task: "фисташковое джелато", enabled: () => !this.gelato, use: () => this.buyGelato() },
       { x: 286, y: 106, r: 22, label: "войти в студию Даны", use: () => this.enter() },
-      { x: 200, y: 136, r: 18, label: "посмотреть на канал", use: () => UI.say([
+      { x: 160, y: 132, r: 18, label: "что это на перилах?", task: "что-то висит на перилах", markDy: 26, enabled: () => !this.cardGot, use: () => this.findCard() },
+      { x: 200, y: 136, r: 18, label: "посмотреть на канал", task: "посмотреть на канал", use: () => UI.say([
         { who: "zhs", text: "Какая красота! Огоньки прямо в воде отражаются." },
         { who: "le", text: "Это Навильи, старые каналы. По ним раньше возили мрамор для Дуомо." }]) }
     ]);
@@ -30,6 +31,15 @@ class StreetScene extends Phaser.Scene {
     });
   }
   updGoal() { UI.goal(this.gelato ? "Иди к студии Даны: дверь с розовой вывеской справа" : "Джелато у киоска или сразу к студии Даны (справа)"); }
+  async findCard() {
+    this.cardGot = true; this.zh.frozen = true; if (this.cardImg) this.cardImg.destroy();
+    await UI.say([{ who: "zhs", text: "Не может быть... Сетчатая сумочка на молнии! Та самая, из нашей «рекламы»!" }, { who: "le", text: "Какой рекламы? Тут опять открытка!" }]);
+    await Postcards.find(this, "video");
+    await UI.say([{ who: "le", text: "Ну и что там было? Ты красная, как помидор!" }, { who: "zhs", text: "Тебе лучше не знать. Скажу только: мой брат — мастер... танца." }]);
+    await Postcards.cameo(this, 250, 112, false);
+    await UI.say([{ who: "le", text: "Слушай, а вон тот парень у студии тебе не машет?" }, { who: "zhs", text: "Где?! Уже нет... Это точно Егор!" }]);
+    this.zh.frozen = false; this.updGoal();
+  }
   async buyGelato() {
     this.gelato = true; this.zh.frozen = true; Sound.sfx("pick");
     await UI.say([

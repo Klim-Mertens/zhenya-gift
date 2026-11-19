@@ -113,7 +113,7 @@ window.UI = (() => {
     clearInterval(typeTick); advance = null; busy = false;
     if (rulesDone) { window.removeEventListener("keydown", rulesDone); const r = $("rules"); if (r) r.removeEventListener("pointerdown", rulesDone); rulesDone = null; }
     if (choiceCleanup) { choiceCleanup(); choiceCleanup = null; }
-    ["dialog", "rules", "banner", "card", "toast", "title", "choice"].forEach(id => { const el = $(id); if (el) el.hidden = true; });
+    ["dialog", "rules", "banner", "card", "toast", "title", "choice", "postcard", "tasks"].forEach(id => { const el = $(id); if (el) el.hidden = true; });
     goal(""); hint(""); const h = $("hint"); if (h) h.classList.remove("high");
   }
   return { rules, reset, choice, offerSkip, get choosing() { return choosing; }, portrait: id => speakers[id] && speakers[id].cv, speaker, say, goal, toast, banner, card, hint, bindClick, get busy() { return busy; } };

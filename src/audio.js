@@ -124,6 +124,11 @@ window.Sound = (() => {
             ["F#5", 1], ["D5", .5], ["B4", .5], ["D5", 1], ["G5", .5], ["F#5", .5],
             ["E5", 1.5], ["D5", .5], ["F#5", 1], ["-", 1]],
       bass: oompa(["Em", "C", "G", "D", "Em", "C", "G", "D"]) },
+    // Воспоминание: тихая «музыкальная шкатулка» (свой мотив)
+    memory: { bpm: 84, lead: "sine", bell: true, drums: false,
+      mel: [["E5", 1], ["G5", .5], ["A5", .5], ["G5", 1], ["E5", 1], ["D5", 1], ["E5", .5], ["G5", .5], ["C5", 2],
+            ["A4", 1], ["C5", .5], ["E5", .5], ["D5", 1], ["C5", 1], ["B4", 1], ["C5", .5], ["D5", .5], ["G4", 2]],
+      bass: oompa(["C", "Am", "F", "G"], 4) },
     // Кухня Нарины: тёплый мандолинный вальсок (свой мотив)
     cucina: { bpm: 132, lead: "triangle", mandolin: true, tamb: false, bell: false, drums: false,
       mel: [["C5", 1], ["F5", .5], ["A5", .5], ["G5", 1], ["F5", 1], ["E5", .5], ["F5", .5], ["G5", 1], ["C5", 2],
@@ -208,6 +213,21 @@ window.Sound = (() => {
       tone(70, t, .18, { type: "sine", vol: .5, slide: .5 }); noise(t, .12, { vol: .16, hp: 300 });
       tone(N, t, last ? .5 : .24, { type: "sawtooth", vol: .1, vib: 5, attack: .02, slide: last ? .8 : 1 }); tone(N * 2, t, last ? .5 : .24, { type: "square", vol: .03, vib: 5, attack: .02 });
       if (last) { clap(t + .16, .22); crowd(t, 1.2, .18); } },
+    // смешной «пук» для воспоминания про видео
+    fart: () => { const t = now(); const o = ctx.createOscillator(), g = ctx.createGain(); o.type = "sawtooth"; o.frequency.setValueAtTime(95, t); o.frequency.linearRampToValueAtTime(60, t + .45);
+      const l = ctx.createOscillator(), lg = ctx.createGain(); l.frequency.value = 28; lg.gain.value = 22; l.connect(lg); lg.connect(o.frequency); l.start(t); l.stop(t + .5);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.22, t + .03); g.gain.linearRampToValueAtTime(.16, t + .3); g.gain.linearRampToValueAtTime(0, t + .5); o.connect(g); g.connect(sfxBus); o.start(t); o.stop(t + .55);
+      noise(t, .4, { vol: .06, hp: 200 }); },
+    // смех: короткие «ха-ха» с понижением
+    laugh: () => { const t = now(); for (let k = 0; k < 7; k++) { tone(420 - k * 18 + (k % 2) * 60, t + k * .16, .1, { type: "sawtooth", vol: .05, vib: 12, attack: .01 }); tone(620 - k * 20, t + .05 + k * .17, .08, { type: "square", vol: .025 }); } },
+    // папино горловое пение: низкий гул с «обертонами» + удары палкой по металлической тарелке
+    throat: () => { const t = now(), dur = 3.4;
+      const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter(); o.type = "sawtooth"; o.frequency.value = 98; f.type = "bandpass"; f.Q.value = 9;
+      f.frequency.setValueAtTime(700, t); [900, 1300, 800, 1600, 1100, 700].forEach((v, i) => f.frequency.linearRampToValueAtTime(v, t + .5 + i * .5));
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.32, t + .2); g.gain.setValueAtTime(.32, t + dur - .3); g.gain.linearRampToValueAtTime(0, t + dur);
+      o.connect(f); f.connect(g); g.connect(sfxBus); o.start(t); o.stop(t + dur + .05);
+      tone(98, t, dur, { type: "triangle", vol: .12, attack: .2, release: .3 });
+      for (let k = 0; k < 15; k++) { const tt = t + k * .22; tone(1250, tt, .25, { type: "triangle", vol: .07, slide: .97, release: .3 }); noise(tt, .03, { vol: .08, hp: 2500 }); } },
     shutter: () => { const t = now(); noise(t, .04, { vol: .3, hp: 2500 }); noise(t + .07, .05, { vol: .25, hp: 1800 }); },
     sparkle: () => { const t = now(); [1568, 2093, 2637, 3136].forEach((f, i) => tone(f, t + i * .06, .1, { type: "sine", vol: .08 })); },
     flap: () => { const t = now(); for (let k = 0; k < 6; k++) noise(t + k * .05, .04, { vol: .12, hp: 900 }); },
@@ -274,5 +294,5 @@ window.Sound = (() => {
   function toggleMute() { muted = !muted; if (master) master.gain.value = muted ? 0 : .7; return muted; }
   // сколько долей прошло с начала текущей музыки (для ритм-игры); null — если звука нет
   const beatNow = () => (ctx && track && track.start != null ? (ctx.currentTime - track.start) / track.beat : null);
-  return { beatNow, unlock, play, stopMusic, sfx, toggleMute, ambient, setVolume, get volume() { return { ...vol }; }, get muted() { return muted; } };
+  return { beatNow, unlock, play, stopMusic, sfx, toggleMute, ambient, setVolume, get trackName() { return track && track.name; }, get ambName() { return amb.name; }, get volume() { return { ...vol }; }, get muted() { return muted; } };
 })();

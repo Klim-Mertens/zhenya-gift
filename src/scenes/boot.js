@@ -28,9 +28,13 @@ class BootScene extends Phaser.Scene {
     UI.speaker("da", "Дана", People.portrait(DanceArt.dana().front[0]), "#ff7ac0");
     const LO = LorenzoArt.build(); LO.front.forEach((c, i) => add(`lo_front_${i}`, c)); add("lo_blink", LO.blink);
     UI.speaker("lo", "Лоренцо", People.portrait(LO.front[0]), "#7ab0ff");
+    const EG = EgorArt.build(); EG.front.forEach((c, i) => add(`eg_front_${i}`, c)); EG.back.forEach((c, i) => add(`eg_back_${i}`, c));
+    add("eg_blink", EG.blink); add("eg_wave", EG.wave); add("egk", EG.kid); add("egk_L", EG.kidL); add("egk_R", EG.kidR); add("egk_blink", EG.kidBlink);
+    UI.speaker("eg", "Егор", People.portrait(EG.front[0]), "#e8504a");
+    { const kp = PK.mk(16, 16); kp.getContext("2d").drawImage(EG.kid, 2, 0); UI.speaker("egk", "Егор, 6 лет", kp, "#f2c23a"); }
     UI.speaker("le", "Лера", People.portrait(P3.le_run.front[0]), "#8ab8f0");
     // ?scene=home|pack|station|ride — для проверки отдельных сцен
     const q = new URLSearchParams(location.search).get("scene");
-    this.scene.start(q && ["home", "pack", "station", "ride", "milan", "duomo", "kitchen", "run", "match", "duel", "street", "studio", "drive", "sunset", "transit", "redlight"].includes(q) ? q : "title");
+    this.scene.start(q && ["home", "pack", "station", "ride", "milan", "duomo", "kitchen", "run", "match", "duel", "street", "studio", "drive", "sunset", "transit", "redlight", "memory"].includes(q) ? q : "title");
   }
 }

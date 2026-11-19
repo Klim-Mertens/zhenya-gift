@@ -17,9 +17,9 @@ class DuomoScene extends Phaser.Scene {
     this.giF = World.follower(this, MilanScene.GI_FRAMES, this.zh, -8, 152, 46);
     this.did = { gelato: false, selfie: false };
     this.inter = World.interactions(this, this.zh, [
-      { x: 276, y: 156, r: 20, label: "купить джелато", enabled: () => !this.did.gelato, use: () => this.gelato() },
+      { x: 276, y: 156, r: 20, label: "купить джелато", task: "джелато для Джана", enabled: () => !this.did.gelato, use: () => this.gelato() },
       { x: 160, y: 112, r: 18, label: "сделать селфи у собора", enabled: () => !this.did.selfie, use: () => this.selfie() },
-      { x: 28, y: 108, r: 20, label: "посмотреть на галерею", use: () => UI.say([
+      { x: 28, y: 108, r: 20, label: "посмотреть на галерею", task: "галерея с быком", use: () => UI.say([
         { who: "na", text: "Это галерея Виктора Эммануила. Там на полу мозаика с быком. Говорят, если покрутиться на пятке, обязательно вернёшься в Милан." },
         { who: "zhs", text: "Тогда я буду крутиться, пока голова не закружится!" },
         { who: "gi", text: "Tre volte! Три... раза!" }]) },

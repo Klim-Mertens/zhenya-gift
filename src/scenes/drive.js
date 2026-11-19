@@ -167,6 +167,7 @@ class SunsetScene extends Phaser.Scene {
     World.backdrop(this, "sun_bg", (g, t) => this.draw(g, t), -1000);
     this.zh = World.npc(this, "zh_summer_front_0", "zh_summer_blink", 138, 124, .3);
     this.lo = World.npc(this, "lo_front_0", "lo_blink", 176, 124, 1.4);
+    this.stick = Postcards.placeItem(this, "glamping", 58, 121); // палочка лежит на скамейке
     // букет — отдельная картинка поверх персонажей (чтобы его было видно)
     if (!this.textures.exists("bouquet")) { const cv = PK.mk(11, 12), g = cv.getContext("2d");
       R_(g); this.textures.addCanvas("bouquet", cv); }
@@ -238,8 +239,18 @@ class SunsetScene extends Phaser.Scene {
       { who: "lo", text: "Bli-ny! Спа-си-бо! Обязательно приедем!" },
       { who: "zhs", text: "Мам, пап, я вас люблю. Тут так хорошо... Но чего-то не хватает." },
       { who: "lo", text: "Чего же?" },
-      { who: "zhs", text: "Не знаю... Как будто кто-то весь день оставляет мне знаки. Ладно, поехали домой!" }
+      { who: "zhs", text: "Не знаю... Ой, а что это на скамейке?" }
     ]);
+    { const cam = this.cameras.main; cam.pan(112, 106, 900, "Sine.easeInOut"); cam.zoomTo(1.6, 900, "Sine.easeInOut"); await World.wait(this, 950); }
+    if (this.stick) { this.tweens.killTweensOf(this.stick); this.tweens.add({ targets: this.stick, scale: 1.4, duration: 400, yoyo: true }); await World.wait(this, 800); this.stick.destroy(); }
+    await Postcards.find(this, "glamping");
+    await UI.say([
+      { who: "zhs", text: "Пульт, номер с кросса, сумочка, а теперь палочка от папиного костра... Это всё Егор! Он где-то рядом!" },
+      { who: "lo", text: "Похоже, у твоего брата есть план. И, кажется, я в нём участвую..." },
+      { who: "zhs", text: "Лоренцо! Ты что-то знаешь?!" },
+      { who: "lo", text: "Я? Niente! Ничего! Поехали домой, amore." }
+    ]);
+    { const cam = this.cameras.main; cam.pan(160, 90, 900, "Sine.easeInOut"); cam.zoomTo(1, 900, "Sine.easeInOut"); await World.wait(this, 950); }
     Save.store("sunset");
     await UI.card("Глава 4 пройдена", "Закат с Лоренцо ★", 3000);
     const c = document.getElementById("card"); c.hidden = false; c.classList.remove("show");

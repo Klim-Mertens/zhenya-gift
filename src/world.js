@@ -57,14 +57,54 @@ window.World = (() => {
     return o;
   }
   // Подсказка «E — …» рядом с тем, к кому подошёл; use() вызывается по пробелу/E
+  // Необязательные «интересные места» (поле task у пункта): список в углу экрана + мигающая звёздочка над местом,
+  // чтобы ничего не пропустить. Выполненное отмечается галочкой.
+  function sparkTex(scene) {
+    if (scene.textures.exists("task_spark")) return "task_spark";
+    const cv = PK.mk(7, 7), g = cv.getContext("2d"); PK.R(g, 3, 0, 1, 7, "#fff4a0"); PK.R(g, 0, 3, 7, 1, "#fff4a0"); PK.R(g, 2, 2, 3, 3, "#ffd84a"); PK.P(g, 3, 3, "#ffffff");
+    scene.textures.addCanvas("task_spark", cv); return "task_spark";
+  }
+  // Список «Интересное рядом»: раскрыт в начале сцены и после каждой находки, потом сворачивается
+  // в одну строку (Tab — раскрыть/свернуть), а если героиня под ним — становится прозрачным.
+  let tpTimer = null, tpOpen = true;
+  function taskPanel(items, expand) {
+    let el = document.getElementById("tasks"); if (!el) { el = document.createElement("div"); el.id = "tasks"; document.getElementById("ui").appendChild(el); }
+    clearTimeout(tpTimer);
+    if (!items.length) { el.hidden = true; return; }
+    const left = items.filter(it => !it.taskDone).length;
+    el.hidden = false; el.innerHTML = "";
+    const h = document.createElement("div"); h.className = "th"; h.textContent = left ? `★ Интересное рядом: ${items.length - left} из ${items.length}` : "Всё осмотрено ★"; el.appendChild(h);
+    items.forEach(it => { const r = document.createElement("div"); r.className = "tr" + (it.taskDone ? " done" : ""); r.textContent = (it.taskDone ? "✓ " : "· ") + it.task; el.appendChild(r); });
+    const f = document.createElement("div"); f.className = "tf"; f.textContent = "Tab — показать список"; el.appendChild(f);
+    el.classList.toggle("all", !left);
+    if (expand) { tpOpen = true; el.classList.remove("mini"); tpTimer = setTimeout(() => { tpOpen = false; el.classList.add("mini"); }, left ? 7000 : 3000); }
+  }
+  window.addEventListener("keydown", e => {
+    const el = document.getElementById("tasks"); if (!el || el.hidden || e.code !== "Tab" || (window.Pause && Pause.open)) return;
+    e.preventDefault(); clearTimeout(tpTimer); tpOpen = !tpOpen; el.classList.toggle("mini", !tpOpen);
+  });
+  function taskDim(scene, playerObj) {
+    const el = document.getElementById("tasks"); if (!el || el.hidden) return;
+    const cam = scene.cameras.main, cv = scene.game.canvas, z = cv.clientWidth / 320;
+    const sx = (playerObj.spr.x - cam.worldView.x) * cam.zoom, sy = (playerObj.spr.y - cam.worldView.y) * cam.zoom;
+    const w = el.offsetWidth / z + 4 + 12, hh = el.offsetHeight / z + 18 + 30;
+    el.classList.toggle("dim", sx < w && sy < hh);
+  }
   function interactions(scene, playerObj, list) {
     let current = null;
+    const tasks = list.filter(it => it.task);
+    tasks.forEach(it => { const use = it.use; it.use = (...a) => { if (!it.taskDone) { it.taskDone = true; Sound.sfx("sparkle"); taskPanel(tasks, true); if (it.mark) { it.mark.destroy(); it.mark = null; } } return use(...a); };
+      it.mark = scene.add.image(it.x, it.y - (it.markDy || 22), sparkTex(scene)).setDepth(5000);
+      scene.tweens.add({ targets: it.mark, y: it.mark.y - 3, alpha: .45, duration: 600, yoyo: true, repeat: -1, ease: "Sine.easeInOut" }); });
+    taskPanel(tasks, true);
     const key = e => { if (["Space", "KeyE", "Enter"].includes(e.code) && current && !UI.busy && !playerObj.frozen) { e.preventDefault(); const c = current; current = null; UI.hint(""); c.use(); } };
     window.addEventListener("keydown", key);
-    scene.events.once("shutdown", () => { window.removeEventListener("keydown", key); UI.hint(""); });
+    scene.events.once("shutdown", () => { window.removeEventListener("keydown", key); UI.hint(""); taskPanel([]); });
     return {
       list,
       update() {
+        tasks.forEach(it => { if (it.mark) it.mark.setVisible(!it.enabled || it.enabled()); });
+        if (tasks.length) taskDim(scene, playerObj);
         if (UI.busy || playerObj.frozen) { if (current) { current = null; UI.hint(""); } return; }
         const px = playerObj.spr.x, py = playerObj.spr.y;
         let best = null, bd = 1e9;

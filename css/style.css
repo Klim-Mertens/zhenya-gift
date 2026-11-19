@@ -121,3 +121,37 @@ body { display: grid; place-items: center; font-family: "Tiny5", monospace; colo
 .banner.chant.rl .syl { background: rgba(42, 26, 36, .85); padding: calc(2px * var(--z)) calc(6px * var(--z)); border: calc(1px * var(--z)) solid #f2c46a; white-space: nowrap; }
 .banner.chant.rl span { font-size: calc(12px * var(--z)); animation: none; transform: none; margin: 0 calc(.5px * var(--z)); }
 .banner.chant.rl.red span { color: #ff3a46 !important; }
+
+/* ---- Список «Интересное рядом» ---- */
+#tasks { position: absolute; left: calc(4px * var(--z)); top: calc(18px * var(--z)); background: rgba(42, 28, 46, .82); border: calc(1px * var(--z)) solid #e8b860;
+  padding: calc(2px * var(--z)) calc(4px * var(--z)); font-size: calc(5px * var(--z)); color: #f4ead8; pointer-events: none; max-width: calc(110px * var(--z)); }
+#tasks[hidden] { display: none; }
+#tasks .th { color: #ffe9b0; margin-bottom: calc(1px * var(--z)); }
+#tasks .tr { line-height: 1.35; }
+#tasks .tr.done { color: #8ac88a; }
+#tasks.all { opacity: .6; }
+#tasks { transition: opacity .25s; }
+#tasks.dim { opacity: .18; }
+#tasks .tf { font-size: calc(4px * var(--z)); color: #a89880; margin-top: calc(1px * var(--z)); }
+#tasks.mini .tr, #tasks:not(.mini) .tf { display: none; }
+#tasks.mini .tf { display: block; }
+
+/* открытка «Помнишь, как мы...?» — тёплая бумага, вещь слева, текст справа */
+#postcard { position: absolute; inset: 0; display: grid; place-content: center; background: rgba(20, 12, 10, .55); pointer-events: auto; }
+#postcard[hidden] { display: none; }
+#postcard .pc { position: relative; display: flex; gap: calc(6px * var(--z)); width: calc(220px * var(--z)); padding: calc(8px * var(--z)) calc(10px * var(--z));
+  background: #f6e8cc; border: calc(1px * var(--z)) solid #b88a5a; box-shadow: calc(3px * var(--z)) calc(3px * var(--z)) 0 rgba(30, 16, 10, .55);
+  transform: rotate(-1.5deg); animation: pcIn .5s ease-out both; color: #4a2e22; }
+#postcard .pc::before { content: ""; position: absolute; left: 50%; top: calc(-4px * var(--z)); width: calc(6px * var(--z)); height: calc(6px * var(--z));
+  border-radius: 50%; background: #d8302c; box-shadow: 0 calc(1px * var(--z)) 0 #7a1a18; transform: translateX(-50%); }
+#postcard .pcl { flex: 0 0 calc(64px * var(--z)); text-align: center; }
+#postcard .pcl canvas { width: calc(64px * var(--z)); height: calc(64px * var(--z)); image-rendering: pixelated; background: #fff8e8; border: calc(1px * var(--z)) dashed #c8a070; }
+#postcard .pci { font-size: calc(5px * var(--z)); color: #8a6a50; margin-top: calc(2px * var(--z)); }
+#postcard .pcr { flex: 1; display: flex; flex-direction: column; border-left: calc(1px * var(--z)) solid #d8b88a; padding-left: calc(6px * var(--z)); }
+#postcard .pch { font-size: calc(9px * var(--z)); color: #c8402a; margin-bottom: calc(3px * var(--z)); }
+#postcard .pct { font-size: calc(6px * var(--z)); line-height: 1.4; flex: 1; }
+#postcard .pcs { font-size: calc(7px * var(--z)); text-align: right; color: #c8402a; margin-top: calc(3px * var(--z)); }
+#postcard .pcf { font-size: calc(5px * var(--z)); color: #9a7a60; margin-top: calc(3px * var(--z)); animation: blinkk 1.2s steps(2) infinite; }
+#postcard .pcn { position: absolute; right: calc(4px * var(--z)); top: calc(3px * var(--z)); font-size: calc(5px * var(--z)); color: #9a7a60; }
+@keyframes pcIn { from { transform: rotate(-8deg) scale(.6); opacity: 0; } to { transform: rotate(-1.5deg) scale(1); opacity: 1; } }
+@keyframes blinkk { 50% { opacity: .35; } }
