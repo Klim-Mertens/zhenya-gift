@@ -42,6 +42,24 @@ window.EgorArt = (() => {
       kid: kidSp(KID), kidL: kidSp(shift(KID, 12, -1)), kidR: kidSp(shift(KID, 12, 1)),
       kidBlink: kidSp(KID.map((r, i) => i === 5 ? ".oSSSSSSSSo." : r)) };
   }
+  // гость-мужчина для массовки: тот же шаблон, другие волосы/кожа/одежда; bald — без волос, beard — борода
+  function variant(o) {
+    const pal = Object.assign({}, PAL, o);
+    let head = HEAD.slice();
+    if (o.bald) head = head.map((r, i) => i >= 1 && i <= 5 ? r.replace(/[Hh]/g, "S") : i === 6 ? r.replace(/[Hhk]/g, "S") : r);
+    if (o.beard) head = head.map((r, i) => i >= 9 && i <= 12 ? r.replace(/s/g, "h") : r);
+    const F = head.concat(BODY), rows = F.concat(LEGS.stand);
+    const blink = F.map((r, i) => i === 7 ? r.replace(/E/g, "S") : i === 8 ? r.replace(/E/g, "o") : r).concat(LEGS.stand);
+    return { idle: PK.sprite(rows, pal), blink: PK.sprite(blink, pal) };
+  }
+  // плюшевый белый гусь (подарок от коллег из Lido), 14×16
+  function goose() {
+    const cv = PK.mk(14, 16), g = cv.getContext("2d"), R = PK.R, P = PK.P;
+    PK.ell(g, 7, 11, 6, 4, "#f4f4f0"); PK.ell(g, 6, 12, 4, 2, "#dcdcd8"); R(g, 9, 3, 3, 8, "#f4f4f0"); PK.ell(g, 10, 3, 2, 2, "#f4f4f0");
+    R(g, 12, 3, 2, 1, "#f29a2a"); P(g, 12, 4, "#d8781a"); P(g, 10, 2, "#2a1a18"); P(g, 3, 9, "#e8e8e4"); R(g, 5, 15, 2, 1, "#f29a2a"); R(g, 8, 15, 2, 1, "#f29a2a");
+    R(g, 8, 6, 3, 1, "#d8302c"); P(g, 9, 7, "#d8302c");   // красный бантик
+    PK.outline(cv, OL); return cv;
+  }
   // вещи для открыток (крупные иконки 16×16)
   function item(id) {
     const cv = PK.mk(16, 16), g = cv.getContext("2d"), R = PK.R, P = PK.P;
@@ -54,5 +72,5 @@ window.EgorArt = (() => {
     if (id === "stick") { for (let k = 0; k < 13; k++) R(g, 1 + k, 13 - k, 2, 2, k < 4 ? "#2a1e18" : "#8a5a32"); R(g, 1, 13, 2, 2, "#e8602a"); P(g, 2, 12, "#ffb040"); }
     PK.outline(cv, OL); return cv;
   }
-  return { build, item };
+  return { build, item, variant, goose };
 })();

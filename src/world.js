@@ -109,7 +109,11 @@ window.World = (() => {
         const px = playerObj.spr.x, py = playerObj.spr.y;
         let best = null, bd = 1e9;
         list.forEach(it => { if (it.enabled && !it.enabled()) return; const d = Math.hypot(px - it.x, py - it.y); if (d < (it.r || 20) && d < bd) { bd = d; best = it; } });
-        if (best !== current) { current = best; UI.hint(best ? "Пробел — " + (typeof best.label === "function" ? best.label() : best.label) : ""); }
+        if (best !== current) { current = best; if (!best) UI.hint(""); }
+        if (best) { // подсказка «Пробел — …» висит прямо над героиней
+          const cam = scene.cameras.main, wv = cam.worldView;
+          UI.hintAt("Пробел — " + (typeof best.label === "function" ? best.label() : best.label), (px - wv.x) * cam.zoom, (py - 30 - wv.y) * cam.zoom);
+        }
       }
     };
   }

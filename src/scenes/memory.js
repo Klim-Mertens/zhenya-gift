@@ -8,9 +8,10 @@ window.Postcards = (() => {
     series: { n: 1, item: "remote", name: "пульт от телевизора", text: "Помнишь, как мы смотрели сериалы дома, на диване в зале? «Гравити Фолз», «Время приключений», «Перевал Дятлова», «Игра в кальмара»... Нашёл пульт — и сразу вспомнил наши вечера." },
     run: { n: 2, item: "bib", name: "номер участника кросса", text: "Помнишь кросс по Коврову этим летом? Восемь километров плечом к плечу. Ты держала темп как настоящая спортсменка, а я еле поспевал. Ты у меня сильная, упорная и самая классная сестра. Горжусь тобой!" },
     video: { n: 3, item: "phone", name: "старый телефон с видео", text: "Помнишь, как ты снимала меня на телефон? Мне шесть, я танцую «брейкданс», ты кричишь: «Егорка умеет вилять попой! Егор мастер попы!» — и тут я случайно пукнул. Мы смеялись до слёз. Мастер попы помнит всё!" },
+    dessert: { n: 5, item: "ladle", name: "огромный половник", text: "Помнишь яблочный десерт? Ты попросила чайную ложечку, а я положил тебе огромный половник. Это была забота: десерта должно быть много! С днём рождения, сестрёнка." },
     glamping: { n: 4, item: "stick", name: "палочка от костра", text: "Помнишь папин день рождения в глэмпинге? Костёр, палка, металлическая тарелка и папино горловое пение. Мы смеялись до слёз." }
   };
-  const TOTAL = 4;
+  const TOTAL = 5;
   function got() { try { return JSON.parse(localStorage.getItem("zhenya-gift-cards") || "[]"); } catch (e) { return []; } }
   function mark(id) { try { const g = got(); if (!g.includes(id)) g.push(id); localStorage.setItem("zhenya-gift-cards", JSON.stringify(g)); } catch (e) {} }
   // HTML-открытка: вещь крупно + текст + подпись; закрывается пробелом/кликом
@@ -33,7 +34,11 @@ window.Postcards = (() => {
     await show(id); mark(id);
     // воспоминание поверх: текущая сцена на паузе, музыка возвращается после
     scene.scene.pause();
-    await new Promise(res => { game.events.once("memory-done", res); scene.scene.launch("memory", { id, from: scene.scene.key }); });
+    // на время воспоминания прячем цель и список заданий текущей главы
+    const hide = ["goal", "tasks", "hint"].map(k => document.getElementById(k)).filter(Boolean), was = hide.map(e => e.hidden);
+    hide.forEach(e => { e.hidden = true; });
+    await new Promise(res => { game.events.once("memory-done", res); scene.scene.launch("memory", { id, from: scene.scene.key }); scene.scene.bringToTop("memory"); });
+    hide.forEach((e, i) => { if (e.id !== "hint") e.hidden = was[i]; });
     scene.scene.resume(); Sound.play(track); Sound.ambient(amb);
     UI.toast(`Открытка ${LIST[id].n} из ${TOTAL} ★`, 2200);
   }
@@ -129,6 +134,19 @@ class MemoryScene extends Phaser.Scene {
     this.state.laugh = false;
     await this.end();
   }
+  // ---------- 5. яблочный десерт и половник ----------
+  async dessert() {
+    this.state.ladle = 0;
+    await UI.say([{ who: "", text: "Кухня у родителей. На столе — горячий яблочный десерт." },
+      { who: "zh", text: "Егор, положи мне десерт, пожалуйста. И дай чайную ложечку!" }, { who: "eg", text: "Сейчас всё будет!" }]);
+    this.state.ladle = 1; Sound.sfx("place"); await World.wait(this, 900);
+    await UI.say([{ who: "zh", text: "Егор... Это что?!" }, { who: "eg", text: "Ложечка! Ну... большая ложечка." },
+      { who: "zh", text: "Я просила ЧАЙНУЮ!" }, { who: "eg", text: "Так десерт же вкусный. Чего мелочиться?" }]);
+    this.state.laugh = true; Sound.sfx("laugh"); await World.wait(this, 1600);
+    await UI.say([{ who: "zh", text: "Ахаха! Ладно, половником даже удобнее..." }]);
+    this.state.laugh = false;
+    await this.end();
+  }
   // ---------- отрисовка ----------
   draw(g, t) {
     const R = PK.R, s = (t - this.t0) / 1000, st = this.state, src = this.src;
@@ -176,6 +194,19 @@ class MemoryScene extends Phaser.Scene {
       const f = st.run ? 1 + Math.floor(s * 7) % 2 : 0, bob = st.run ? Math.abs(Math.sin(s * 14)) * 2 : 0;
       fig(`zh_summer_front_${f}`, 136, 128 - bob, { sc: 2.4 }); fig(`eg_front_${st.run ? 2 - (Math.floor(s * 7) % 2) : 0}`, 186, 128 - (st.run ? Math.abs(Math.cos(s * 14)) * 2 : 0), { sc: 2.4 });
       if (st.tired) { R(g, 128, 70, 3, 3, "#9ad0f0"); R(g, 196, 68, 3, 3, "#9ad0f0"); }
+    } else if (this.mid === "dessert") {
+      // кухня: плитка, окно со снегом, стол с десертом
+      R(g, 0, 0, 320, 106, "#f2e8d4"); for (let x = 0; x < 320; x += 10) for (let y = 0; y < 106; y += 10) { R(g, x, y, 10, 1, "#ddd0b8"); R(g, x, y, 1, 10, "#ddd0b8"); }
+      R(g, 220, 14, 70, 50, "#bfe0f4"); RK.box(g, 220, 14, 70, 50, RK.OL); R(g, 254, 14, 2, 50, "#f4f0e8"); for (let k = 0; k < 12; k++) PK.P(g, 224 + (k * 23 + Math.floor(s * 12)) % 62, 18 + (k * 17 + Math.floor(s * 20)) % 44, "#ffffff");
+      R(g, 20, 30, 70, 30, "#c8d0d8"); RK.box(g, 20, 30, 70, 30, RK.OL); PK.ell(g, 40, 40, 8, 4, "#3a3a44"); PK.ell(g, 66, 40, 8, 4, "#3a3a44");   // плита
+      R(g, 0, 106, 320, 74, "#a87a52"); for (let x = 0; x < 320; x += 16) R(g, x, 106, 1, 74, "#946a44");
+      fig("zh_home_front_0", 110, 124 + laugh(1), { sc: 2 });
+      fig(Math.floor(s * 3) % 7 === 0 ? "eg_blink" : "eg_front_0", 210, 124 + laugh(2), { sc: 2 });
+      R(g, 70, 100, 180, 12, "#f4f0e8"); R(g, 70, 112, 180, 20, "#e8dcc8"); RK.box(g, 70, 100, 180, 32, RK.OL);   // стол
+      PK.ell(g, 160, 100, 22, 6, "#f4f0e8"); PK.ell(g, 160, 98, 18, 4, "#c87a3a"); PK.ell(g, 156, 96, 5, 3, "#e8a050"); PK.ell(g, 166, 97, 5, 3, "#d8903a");   // десерт
+      for (let k = 0; k < 3; k++) { const yy = 90 - ((s * 12 + k * 6) % 16); PK.P(g, 152 + k * 7, Math.round(yy), "#ffffff"); }   // пар
+      if (this.state.ladle) { const img = EgorArt.item("ladle"); g.save(); g.translate(196, 70); g.rotate(-.5 + Math.sin(s * 3) * .05); g.drawImage(img, 0, 0, 16, 16, -20, -20, 40, 40); g.restore(); }
+      else R(g, 128, 102, 1, 6, "#c8ccd8");
     } else if (this.mid === "glamping") {
       // ночь, звёзды, купола глэмпинга, костёр в металлической тарелке
       PK.gradV(g, 0, 0, 320, 120, ["#0e1030", "#1e2a5a", "#2a3a6a"]);

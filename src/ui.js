@@ -79,7 +79,14 @@ window.UI = (() => {
       setTimeout(() => { window.addEventListener("keydown", done); el.addEventListener("pointerdown", done); }, 400);
     });
   }
-  function hint(text) { const el = $("hint"); el.textContent = clean(text); el.hidden = !text; }
+  function hint(text) { const el = $("hint"); el.textContent = clean(text); el.hidden = !text; el.classList.remove("float"); el.style.left = el.style.top = ""; }
+  // подсказка прямо над героиней (x, y — точка в пикселях игры 320×180)
+  function hintAt(text, x, y) {
+    const el = $("hint"); const t = clean(text); if (el.textContent !== t) el.textContent = t; el.hidden = !text; el.classList.add("float");
+    const w = el.offsetWidth / (parseFloat(getComputedStyle(el).getPropertyValue("--z")) || 4);
+    const cx = Math.max(w / 2 + 3, Math.min(320 - w / 2 - 3, x)), cy = Math.max(12, Math.min(176, y));
+    el.style.left = `calc(${cx.toFixed(1)}px * var(--z))`; el.style.top = `calc(${cy.toFixed(1)}px * var(--z))`;
+  }
   // Выбор из нескольких вариантов (кнопки; ← → или ↑ ↓ и Enter/Пробел, или клик). Возвращает номер варианта.
   function choice(question, options, def = 0) {
     busy = true; choosing = true;
@@ -116,5 +123,5 @@ window.UI = (() => {
     ["dialog", "rules", "banner", "card", "toast", "title", "choice", "postcard", "tasks"].forEach(id => { const el = $(id); if (el) el.hidden = true; });
     goal(""); hint(""); const h = $("hint"); if (h) h.classList.remove("high");
   }
-  return { rules, reset, choice, offerSkip, get choosing() { return choosing; }, portrait: id => speakers[id] && speakers[id].cv, speaker, say, goal, toast, banner, card, hint, bindClick, get busy() { return busy; } };
+  return { hintAt, rules, reset, choice, offerSkip, get choosing() { return choosing; }, portrait: id => speakers[id] && speakers[id].cv, speaker, say, goal, toast, banner, card, hint, bindClick, get busy() { return busy; } };
 })();

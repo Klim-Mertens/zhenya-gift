@@ -1,5 +1,5 @@
 /* Финал главы 4: вечеринка-сюрприз дома у Лоренцо.
-   Темно → «SORPRESA!» → все друзья и Егор (он и подкладывал открытки), родители по видео на ноутбуке.
+   Темно → «SORPRESA!» → все друзья и Егор (он и подкладывал открытки), родители, коллеги из Lido с плюшевым гусем, гости.
    Женя обходит гостей (список «Интересное рядом»), Егор протягивает «ложечку» (опять половник!), потом свечи на торте. */
 "use strict";
 class PartyScene extends Phaser.Scene {
@@ -8,25 +8,58 @@ class PartyScene extends Phaser.Scene {
     Save.store("party"); Sound.stopMusic(); UI.goal(""); UI.hint("");
     const add = (k, cv) => { if (!this.textures.exists(k)) this.textures.addCanvas(k, cv); };
     const D = DanceArt.dana(); D.front.forEach((c, i) => add(`da_front_${i}`, c)); add("da_blink", D.blink);
-    add("pc_ladle", EgorArt.item("ladle"));
+    add("pc_ladle", EgorArt.item("ladle")); add("goose", EgorArt.goose());
+    // массовка и коллеги: мужчины — шаблон Егора, женщины — шаблон Жени, другие цвета
+    const T = People.templates();
+    const woman = o => { const pal = Object.assign({}, T.ZH_PAL, o); const F = T.ZH_FRONT;
+      return { idle: PK.sprite(F.concat(T.LEGS.stand), pal), blink: PK.sprite(F.map((r, i) => i === 8 ? "..oHSSSSSSSSHo.." : i === 9 ? "..oHSSoSSoSSHo.." : r).concat(T.LEGS.stand), pal) }; };
+    const GUESTS = {
+      c1: woman({ H: "#2a1c18", h: "#1a100c", L: "#4a3028", W: "#3a6ac8", w: "#2a4a98", J: "#2a2a34", j: "#1a1a24" }),
+      c2: EgorArt.variant({ H: "#c8a060", h: "#9a7840", k: "#d8b878", K: "#f4f0e8", q: "#c8c4bc", d: "#a8a49c", J: "#4a4a5a" }),
+      c3: woman({ H: "#b8402a", h: "#8a2a1a", L: "#d8603a", W: "#3a9a6a", w: "#2a7a4a", J: "#e8dcc8", j: "#c8bca8" }),
+      x1: EgorArt.variant({ H: "#1a1a1e", h: "#0e0e12", k: "#3a3a3e", S: "#c8906a", s: "#a8704a", K: "#d8302c", q: "#a8201c", d: "#8a1a18" }),
+      x2: woman({ H: "#f0d890", h: "#c8b060", L: "#fff0b8", W: "#ff8ab0", w: "#d86a90" }),
+      x3: EgorArt.variant({ bald: true, beard: true, S: "#e8b48e", s: "#c48a66", h: "#6a4a3a", K: "#4a4a5a", q: "#3a3a48", d: "#2a2a34", J: "#2a2a34" }),
+      x4: woman({ H: "#3a2418", h: "#24140c", L: "#5a3a28", S: "#a8704a", s: "#88583a", W: "#f2c23a", w: "#c89a1a", J: "#3a3a8a" }),
+      x5: woman({ H: "#8a8a92", h: "#6a6a72", L: "#b8b8c0", W: "#8a4ab8", w: "#6a2a98" }),
+      x6: EgorArt.variant({ H: "#7a3a1a", h: "#5a2a10", k: "#9a5a2a", K: "#f4f0e8", q: "#d8d4cc", d: "#c8c4bc", J: "#6a4a2a" })
+    };
+    Object.entries(GUESTS).forEach(([k, v]) => { add(`pg_${k}`, v.idle); add(`pg_${k}_b`, v.blink); });
+    UI.speaker("lido", "Коллеги из Lido", People.portrait(GUESTS.c1.idle), "#5ab0ff");
+    UI.speaker("lido2", "Коллега из Lido", People.portrait(GUESTS.c2.idle), "#5ab0ff");
+    UI.speaker("lido3", "Коллега из Lido", People.portrait(GUESTS.c3.idle), "#5ab0ff");
+    ["x1", "x2", "x3", "x4", "x5", "x6"].forEach(k => UI.speaker("g" + k, "Гость", People.portrait(GUESTS[k].idle), "#d8c8b0"));
     this.st = { light: 0, confetti: [], candles: true, flash: 0 };
     this.cameras.main.fadeIn(800, 0, 0, 0);
     World.backdrop(this, "party_bg", (g, t) => this.draw(g, t), -1000);
     World.backdrop(this, "party_fx", (g, t) => this.fx(g, t), 6000);
-    // гости
+    // гости (координаты — ноги)
+    const N = (k, idle, blink, x, y, ph) => World.npc(this, idle, blink, x, y, ph);
     this.npcs = {
-      na: World.npc(this, "na_front_0", "na_blink", 64, 132, .2), gi: World.npc(this, "gi_idle", "gi_blink", 86, 134, 1.1),
-      eg: World.npc(this, "eg_front_0", "eg_blink", 140, 102, .7),
-      le: World.npc(this, "le_run_front_0", "le_run_blink", 236, 132, 2.1), da: World.npc(this, "da_front_0", "da_blink", 260, 136, 1.6)
+      eg: N("eg", "eg_front_0", "eg_blink", 140, 104, .7),
+      na: N("na", "na_front_0", "na_blink", 56, 120, .2), gi: N("gi", "gi_idle", "gi_blink", 76, 122, 1.1),
+      pa: N("pa", "pa_home_idle", "pa_home_blink", 98, 160, .4), ma: N("ma", "ma_home_idle", "ma_home_blink", 116, 162, 1.9),
+      le: N("le", "le_run_front_0", "le_run_blink", 230, 120, 2.1), da: N("da", "da_front_0", "da_blink", 252, 122, 1.6),
+      c1: N("c1", "pg_c1", "pg_c1_b", 206, 162, .9), c2: N("c2", "pg_c2", "pg_c2_b", 224, 164, 2.4), c3: N("c3", "pg_c3", "pg_c3_b", 242, 162, .1),
+      x1: N("x1", "pg_x1", "pg_x1_b", 104, 116, 1.3), x2: N("x2", "pg_x2", "pg_x2_b", 210, 112, 2.8), x3: N("x3", "pg_x3", "pg_x3_b", 292, 134, .5),
+      x4: N("x4", "pg_x4", "pg_x4_b", 302, 162, 1.7), x5: N("x5", "pg_x5", "pg_x5_b", 30, 168, 3.1), x6: N("x6", "pg_x6", "pg_x6_b", 156, 166, 2.2)
     };
+    this.gooseImg = this.add.image(233, 152, "goose").setOrigin(.5, 1).setDepth(165);   // гусь в руках у коллеги
     this.lo = World.npc(this, "lo_front_0", "lo_blink", 30, 102, 1.4); this.lo.spr.setAlpha(0);
-    this.zh = World.player(this, World.frameKeys("zh_summer"), 22, 100);
+    this.zh = World.player(this, World.frameKeys("zh_summer"), 22, 102);
     this.zh.spr.setAlpha(0); this.zh.frozen = true;
-    this.zh.blockers = [[0, 0, 320, 98], [124, 104, 72, 24], [276, 100, 44, 20], [0, 0, 4, 180], [316, 0, 4, 180], [0, 176, 320, 4]];
+    // стена; стол целиком (за него зайти нельзя — там стоит Егор); столик; края; гости — небольшие «ноги»-препятствия
+    this.zh.blockers = [[0, 0, 320, 100], [122, 96, 76, 32], [276, 96, 44, 22], [0, 0, 4, 180], [316, 0, 4, 180], [0, 176, 320, 4]];
+    Object.entries(this.npcs).forEach(([k, n]) => { if (k !== "eg") this.zh.blockers.push([n.spr.x - 6, n.spr.y - 5, 12, 6]); });
     this.talked = {};
-    const talk = (id, label, task, fn) => ({ get x() { return id === "lo" ? self.lo.spr.x : self.npcs[id] ? self.npcs[id].spr.x : 0; }, get y() { return (id === "lo" ? self.lo.spr.y : self.npcs[id].spr.y) + (id === "eg" ? 22 : 2); },
-      r: 18, label, task, markDy: id === "eg" ? 48 : 30, enabled: () => this.free && !this.talked[id], use: async () => { this.talked[id] = true; this.zh.frozen = true; await fn(); this.zh.frozen = false; this.updGoal(); } });
-    const self = this;
+    const self = this, TASKS = this.TASKS = ["eg", "na", "pa", "lido", "le", "da", "lo"];
+    // точка разговора: прямо перед гостем; у Егора — перед столом
+    const spot = id => id === "lo" ? [self.lo.spr.x + 10, self.lo.spr.y] : id === "eg" ? [140, 134] : id === "pa" ? [107, 168] : id === "lido" ? [224, 172] : id === "na" ? [66, 128] : [self.npcs[id].spr.x, self.npcs[id].spr.y + 8];
+    const talk = (id, label, task, fn) => ({ get x() { return spot(id)[0]; }, get y() { return spot(id)[1]; }, r: 16, label, task,
+      markDy: id === "eg" ? 56 : 36, enabled: () => this.free && !this.talked[id],
+      use: async () => { this.talked[id] = true; this.zh.frozen = true; await fn(); this.zh.frozen = false; this.updGoal(); } });
+    const extra = (id, lines) => ({ get x() { return self.npcs[id].spr.x; }, get y() { return self.npcs[id].spr.y + 7; }, r: 14, label: "поболтать с гостем",
+      enabled: () => this.free, use: async () => { this.zh.frozen = true; await UI.say(lines); this.zh.frozen = false; } });
     this.inter = World.interactions(this, this.zh, [
       talk("eg", "обнять брата", "поговорить с Егором", () => this.egor()),
       talk("na", "поговорить с Нариной и Джаном", "Нарина и Джан", () => UI.say([
@@ -34,6 +67,14 @@ class PartyScene extends Phaser.Scene {
         { who: "gi", text: "Же-ня! С... днём... рож-де-ни-я! Ти — су-пер! Salute!" },
         { who: "na", text: "Он поднимает бокал. Говорит, что это лучший день в году, потому что ты родилась." },
         { who: "zhs", text: "Grazie, Джан! Ты тоже супер!" }])),
+      talk("pa", "обнять маму и папу", "мама и папа", () => UI.say([
+        { who: "mama", text: "Женечка, с днём рождения, доченька! Мы тебя очень-очень любим!" },
+        { who: "mama", text: "Я блинов с икрой напекла, целую гору. Всех итальянцев накормим!" },
+        { who: "papa", text: "С днём рождения, дочка! А теперь все вместе: МО-СКОВ-СКИЙ..." },
+        { who: "mama", text: "Лёша!" },
+        { who: "papa", text: "...ДЕНЬ РОЖ-ДЕ-НИ-Я! Ну а что, тоже в ритм!" },
+        { who: "zhs", text: "Ахаха! Пап, мам, я так рада, что вы здесь!" }])),
+      talk("lido", "поговорить с коллегами из Lido", "коллеги из Lido", () => this.lido()),
       talk("le", "поговорить с Лерой", "Лера", () => UI.say([
         { who: "le", text: "С днём рождения, чемпионка! Желаю, чтобы каждый забег заканчивался джелато!" },
         { who: "zhs", text: "И чтобы самокатчики объезжали меня стороной!" },
@@ -47,31 +88,29 @@ class PartyScene extends Phaser.Scene {
         { who: "lo", text: "Твой брат написал мне месяц назад. Я молчал, как партизан. Так говорят, да?" },
         { who: "lo", text: "Amore, с днём рождения. С тобой каждый день как сегодняшний закат." },
         { who: "zhs", text: "Это самый лучший день." }])),
-      { x: 294, y: 124, r: 18, label: "поговорить с мамой и папой по видео", task: "мама и папа на ноутбуке", enabled: () => this.free && !this.talked.pa,
-        use: async () => { this.talked.pa = true; this.zh.frozen = true; this.st.call = true; Sound.sfx("ding");
-          await UI.say([
-            { who: "mama", text: "Женечка, с днём рождения, доченька! Мы тебя очень-очень любим!" },
-            { who: "papa", text: "С днём рождения! Здоровья, счастья, и чтобы Спартак... то есть чтобы у тебя всё было отлично!" },
-            { who: "mama", text: "Жалко, блинов с икрой на всех не напечёшь через экран. Приезжайте зимой!" },
-            { who: "zhs", text: "Обязательно приедем! Я вас люблю!" }]);
-          this.zh.frozen = false; this.updGoal(); } },
-      { x: 178, y: 132, r: 16, label: "задуть свечи на торте", enabled: () => this.free && this.allTalked(), use: () => this.candles() }
+      extra("x1", [{ who: "gx1", text: "Tanti auguri! Я друг Лоренцо. Он про тебя столько рассказывал!" }]),
+      extra("x2", [{ who: "gx2", text: "Buon compleanno! А правда, что в России сейчас минус двадцать?" }, { who: "zhs", text: "Правда. Поэтому я здесь!" }]),
+      extra("x3", [{ who: "gx3", text: "Auguri! Я сосед Лоренцо. Если будет шумно — я и сам приду танцевать!" }]),
+      extra("x4", [{ who: "gx4", text: "С днём рождения! Торт выглядит потрясающе. Когда режем?" }]),
+      extra("x5", [{ who: "gx5", text: "Cara, sei bellissima! Счастья тебе!" }]),
+      extra("x6", [{ who: "gx6", text: "Auguri! Говорят, твой брат прилетел ради этого вечера. Вот это семья!" }]),
+      { x: 178, y: 134, r: 14, label: "задуть свечи на торте", enabled: () => this.free && this.allTalked(), use: () => this.candles() }
     ]);
     this.time.delayedCall(900, () => this.intro());
   }
-  allTalked() { return ["eg", "na", "le", "da", "lo", "pa"].every(k => this.talked[k]); }
+  allTalked() { return this.TASKS.every(k => this.talked[k]); }
   updGoal() {
-    const left = ["eg", "na", "le", "da", "lo", "pa"].filter(k => !this.talked[k]).length;
-    UI.goal(left ? `Поздравления: подойди ко всем гостям (осталось ${left})` : "Задуй свечи на торте!");
+    const left = this.TASKS.filter(k => !this.talked[k]).length;
+    UI.goal(left ? `Поздравления: подойди к гостям из списка (осталось ${left})` : "Все поздравили! Теперь задуй свечи на торте");
   }
   async intro() {
     Sound.sfx("door"); this.tweens.add({ targets: [this.zh.spr, this.lo.spr], alpha: 1, duration: 400 });
     await World.walkTo(this, this.zh, 44, 140, 40);
-    this.tweens.add({ targets: this.lo.spr, x: 26, y: 142, duration: 900 }); this.lo.spr.setDepth(142);
+    this.tweens.add({ targets: this.lo.spr, x: 22, y: 146, duration: 900 }); this.lo.spr.setDepth(146);
     this.zh.face("side", false);
     await UI.say([{ who: "zhs", text: "Лоренцо, а почему так темно? Где тут выключатель?" }, { who: "lo", text: "Сейчас найду... Uno... due... TRE!" }]);
     // свет!
-    this.tweens.add({ targets: this.st, light: 1, duration: 250 }); Sound.sfx("party"); this.burst(160, 60, 120);
+    this.tweens.add({ targets: this.st, light: 1, duration: 250 }); Sound.sfx("party"); this.burst(160, 60, 140);
     Sound.play("birthday");
     UI.banner('<div class="syl"><span>SOR</span><span>PRE</span><span>SA!</span></div>', "chant", 2200);
     await World.wait(this, 2300);
@@ -79,11 +118,31 @@ class PartyScene extends Phaser.Scene {
       { who: "zhs", text: "А-А-А! Что?! Вы все здесь?!" },
       { who: "eg", text: "С днём рождения, сестрёнка!" },
       { who: "zhs", text: "ЕГОР?! Ты в Милане?! Так это ты весь день подкладывал мне открытки?!" },
-      { who: "eg", text: "Четыре открытки — четыре наших воспоминания. А пятое сделаем сегодня, все вместе." },
+      { who: "eg", text: "Четыре открытки — четыре наших воспоминания. А сегодня мы сделаем новое, все вместе." },
+      { who: "zhs", text: "Подожди... Мама? Папа?! И вы здесь?!" },
+      { who: "mama", text: "Сюрприз, доченька! Разве мы могли пропустить такой день?" },
+      { who: "lido", text: "И мы! Вся команда Lido в сборе!" },
       { who: "na", text: "Мы еле удержались, чтобы не проболтаться!" },
-      { who: "lo", text: "Я же говорил: я ничего не знаю. Niente!" }
+      { who: "lo", text: "А я же говорил: я ничего не знаю. Niente!" }
     ]);
     this.free = true; this.zh.frozen = false; this.updGoal();
+  }
+  async lido() {
+    await UI.say([
+      { who: "lido", text: "Женя, с днём рождения от всей нашей команды Lido!" },
+      { who: "lido2", text: "Мы долго выбирали подарок... и выбрали самый лучший." },
+      { who: "lido3", text: "Встречай! Белый гусь!" }
+    ]);
+    // гусь «летит» к Жене и дальше остаётся у неё в руках
+    const z = this.zh.spr; Sound.sfx("flap");
+    await new Promise(r => this.tweens.add({ targets: this.gooseImg, x: z.x + 9, y: z.y - 6, duration: 700, ease: "Sine.easeInOut", onComplete: r }));
+    this.gooseHeld = true; Sound.sfx("sparkle");
+    await UI.say([
+      { who: "zhs", text: "А-а-а, какой мягкий! Белый плюшевый гусь! Я его обожаю!" },
+      { who: "lido2", text: "Пусть охраняет твой рабочий стол." },
+      { who: "lido", text: "И напоминает: в Lido тебя все очень любят и ждут!" },
+      { who: "zhs", text: "Спасибо, ребята! Гусь теперь официально член команды." }
+    ]);
   }
   async egor() {
     await UI.say([
@@ -98,9 +157,11 @@ class PartyScene extends Phaser.Scene {
     await World.wait(this, 900);
     await UI.say([
       { who: "zhs", text: "Опять половник?! Ахаха! Как тогда с яблочным десертом! Ничего не меняется!" },
-      { who: "eg", text: "Это традиция! Чайные ложечки — для слабаков." }
+      { who: "eg", text: "Это традиция! Посмотри, к нему кое-что приколото." }
     ]);
     this.tweens.add({ targets: img, alpha: 0, scale: 1, duration: 400, onComplete: () => img.destroy() });
+    await Postcards.find(this, "dessert");   // пятая открытка и воспоминание про десерт
+    await UI.say([{ who: "zhs", text: "Пять открыток — пять воспоминаний. Ты всё это придумал сам?" }, { who: "eg", text: "Ага. Чайные ложечки — для слабаков." }]);
     await UI.say([{ who: "eg", text: "А если серьёзно... Я тебя очень люблю, Жень. С днём рождения!" }, { who: "zhs", text: "И я тебя, братишка. Это лучший подарок." }]);
   }
   async candles() {
@@ -129,7 +190,8 @@ class PartyScene extends Phaser.Scene {
   }
   update(time, dt) {
     this.zh.update(dt); this.inter.update(); this.lo.update(); Object.values(this.npcs).forEach(n => n.update());
-    // гости смотрят на Женю, когда она рядом (поворот спрайта)
+    if (this.gooseHeld) { const z = this.zh.spr, side = this.zh.dir === "side" ? (z.flipX ? -1 : 1) : 1;   // гусь в руках у Жени
+      this.gooseImg.setPosition(z.x + 8 * side, z.y - 5).setFlipX(side < 0).setDepth(this.zh.dir === "back" ? z.y - 1 : z.y + 1); }
     const d = dt / 1000;
     this.st.confetti = this.st.confetti.filter(p => { p.vy += 120 * d; p.vx *= .985; p.x += p.vx * d; p.y += p.vy * d; p.life -= d; return p.life > 0 && p.y < 182; });
   }
@@ -174,8 +236,8 @@ class PartyScene extends Phaser.Scene {
       const by = y + Math.round(Math.sin(s * 1.6 + k) * 2); PK.line(g, x, by + 6, x + (k % 2 ? 2 : -2), by + 26, "#8a8a8a"); PK.ell(g, x, by, 5, 6, c); P(g, x - 2, by - 3, "#ffffff"); });
     // столик с ноутбуком (родители по видео)
     R(g, 276, 98, 40, 6, "#7a4a2a"); R(g, 280, 104, 3, 14, "#5a3a22"); R(g, 309, 104, 3, 14, "#5a3a22"); RK.box(g, 276, 98, 40, 6, OL);
-    R(g, 284, 82, 24, 16, "#2a2a34"); R(g, 286, 84, 20, 12, st.call ? "#bfe4ff" : "#3a4a6a"); R(g, 282, 97, 28, 2, "#8a8a98");
-    if (st.call) { const ma = UI.portrait("mama"), pa = UI.portrait("papa"); if (ma) g.drawImage(ma, 0, 0, 16, 16, 286, 84, 10, 10); if (pa) g.drawImage(pa, 0, 0, 16, 16, 296, 84, 10, 10); }
+    R(g, 284, 82, 24, 16, "#2a2a34"); R(g, 286, 84, 20, 12, "#1a2a4a"); R(g, 282, 97, 28, 2, "#8a8a98");
+    if (st.light > .5) for (let k = 0; k < 6; k++) { const h = 2 + Math.round(Math.abs(Math.sin(s * 6 + k * 1.7)) * 8); R(g, 288 + k * 3, 95 - h, 2, h, ["#ff5a7a", "#ffd84a", "#5ad0ff"][k % 3]); }   // плейлист вечеринки
     // стол с тортом
     R(g, 126, 106, 68, 16, "#f4f0e8"); R(g, 126, 118, 68, 4, "#d8d0c4"); RK.box(g, 126, 106, 68, 16, OL);
     for (let x = 128; x < 194; x += 6) R(g, x, 121, 3, 3, "#e8e0d4");

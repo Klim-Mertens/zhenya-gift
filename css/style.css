@@ -74,6 +74,7 @@ body { display: grid; place-items: center; font-family: "Tiny5", monospace; colo
 @keyframes blinkf { 50% { opacity: .35; } }
 /* на кухне подсказка поднимается над полкой с продуктами, чтобы не закрывать их */
 #hint.high { bottom: calc(32px * var(--z)); }
+#hint.float { bottom: auto; transform: translate(-50%, -100%); font-size: calc(5px * var(--z)); pointer-events: none; }
 
 /* ---- Меню разработчика (временное) ---- */
 #devbtn { position: absolute; right: calc(18px * var(--z)); top: calc(4px * var(--z)); height: calc(12px * var(--z)); padding: 0 calc(3px * var(--z));
