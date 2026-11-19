@@ -6,8 +6,8 @@
 window.Postcards = (() => {
   const LIST = {
     series: { n: 1, item: "remote", name: "пульт от телевизора", text: "Помнишь, как мы смотрели сериалы дома, на диване в зале? «Гравити Фолз», «Время приключений», «Перевал Дятлова», «Игра в кальмара»... Нашёл пульт — и сразу вспомнил наши вечера." },
-    run: { n: 2, item: "bib", name: "номер участника кросса", text: "Помнишь кросс по Коврову этим летом? Восемь километров рядом, ровным темпом. Ничего особенного — просто пробежали и устали. Но с тобой было здорово." },
-    video: { n: 3, item: "bag", name: "сетчатая сумочка на молнии", text: "Помнишь нашу «рекламу» сетчатой сумочки и смешные видео? Мне было шесть, и я был мастером... ну, ты помнишь чего." },
+    run: { n: 2, item: "bib", name: "номер участника кросса", text: "Помнишь кросс по Коврову этим летом? Восемь километров плечом к плечу. Ты держала темп как настоящая спортсменка, а я еле поспевал. Ты у меня сильная, упорная и самая классная сестра. Горжусь тобой!" },
+    video: { n: 3, item: "phone", name: "старый телефон с видео", text: "Помнишь, как ты снимала меня на телефон? Мне шесть, я танцую «брейкданс», ты кричишь: «Егорка умеет вилять попой! Егор мастер попы!» — и тут я случайно пукнул. Мы смеялись до слёз. Мастер попы помнит всё!" },
     glamping: { n: 4, item: "stick", name: "палочка от костра", text: "Помнишь папин день рождения в глэмпинге? Костёр, палка, металлическая тарелка и папино горловое пение. Мы смеялись до слёз." }
   };
   const TOTAL = 4;
@@ -88,30 +88,31 @@ class MemoryScene extends Phaser.Scene {
   // ---------- 2. кросс по Коврову ----------
   async run() {
     this.state.run = true; this.state.km = 0;
-    await UI.say([{ who: "", text: "Ковров, этим летом. Кросс — восемь километров." }, { who: "zh", text: "Держим темп, Егр!" }, { who: "eg", text: "Держу! Бежим ровно, бро." }]);
+    await UI.say([{ who: "", text: "Ковров, этим летом. Кросс — восемь километров." }, { who: "zh", text: "Держим темп, Егр!" }, { who: "eg", text: "Держу! Ты бежишь как профи, сестрёнка." }]);
     for (let k = 1; k <= 8; k++) { this.state.km = k; Sound.sfx("blip", 1 + k * .05); await World.wait(this, 520); }
     this.state.run = false; this.state.tired = true;
-    await UI.say([{ who: "zh", text: "Уф... Восемь километров." }, { who: "eg", text: "Ничего необычного. Просто пробежали..." }, { who: "zh", text: "...и устали! Но было здорово." }]);
+    await UI.say([{ who: "zh", text: "Уф... Восемь километров!" }, { who: "eg", text: "Ты просто машина! Я бы один сдался ещё на третьем." },
+      { who: "zh", text: "Вместе бежать легче." }, { who: "eg", text: "С тобой — всё легче. Ты лучшая, Жень." }]);
     await this.end();
   }
   // ---------- 3. «реклама» и смешные видео (Егору 6 лет) ----------
   async video() {
     this.state.rec = true; this.state.kid = "stand";
-    await UI.say([{ who: "", text: "Старое видео на телефоне. Егору шесть лет." },
-      { who: "zh", text: "Внимание, реклама! Сетчатая сумочка на молнии! Лёгкая, удобная, и сразу видно, что внутри!" }]);
-    this.state.bag = true;
-    await UI.say([{ who: "", text: "«Что это у вас там? Борода? Или бородавка?»" }]);
-    await UI.say([{ who: "egk", text: "А теперь — брейкданс!" }]);
+    await UI.say([{ who: "", text: "Старое видео на телефоне. Женя снимает, Егору шесть лет. Он объявляет, что сейчас будет номер." },
+      { who: "egk", text: "Смотри! Сейчас будет брейкданс!" },
+      { who: "zh", text: "Так, снимаю! Встречайте: Егор и его коронный танец!" }]);
     this.state.kid = "dance"; Sound.play("studio", true);
-    await UI.say([{ who: "zh", text: "Егорка умеет вилять попой! Вот как! Вот как попой повилял!" }]);
+    await UI.say([{ who: "", text: "Егор изо всех сил крутит попой под музыку. Женя еле держит телефон от смеха." },
+      { who: "zh", text: "Егорка умеет вилять попой! Вот как! Вот как попой повилял!" }]);
     this.state.kid = "spin";
-    await UI.say([{ who: "zh", text: "Урааа! Егор мастер попы!" }]);
-    this.state.kid = "stand"; Sound.stopMusic(); Sound.sfx("fart"); this.state.puk = this.time.now; await World.wait(this, 700);
-    this.state.laugh = true; Sound.sfx("laugh"); await World.wait(this, 1600); this.state.laugh = false;
-    await UI.say([{ who: "zh", text: "Мдааа... Егор точно мастер попы..." }]);
-    Sound.play("memory", true);
-    await UI.say([{ who: "", text: "«Дед Морщеед, па-парам!»" }]); Sound.sfx("done");
-    await UI.say([{ who: "zh", text: "Снято! Это будет хит." }]);
+    await UI.say([{ who: "", text: "Финальный трюк: Егор встаёт на голову..." }, { who: "zh", text: "Урааааа! Егор мастер попы!" }]);
+    this.state.kid = "stand"; Sound.stopMusic(); Sound.sfx("fart"); this.state.puk = this.time.now; await World.wait(this, 900);
+    await UI.say([{ who: "", text: "...и в полной тишине раздаётся «пук». Случайно. Очень громко." }]);
+    this.state.laugh = true; Sound.sfx("laugh"); await World.wait(this, 1600);
+    await UI.say([{ who: "", text: "Оба падают от смеха. Видео трясётся, слышно только хохот." },
+      { who: "zh", text: "Мдааааа... Егор точно мастер попы..." }, { who: "egk", text: "Это был спецэффект!" }]);
+    this.state.laugh = false; Sound.play("memory", true);
+    await UI.say([{ who: "zh", text: "Это видео я сохраню навсегда." }]);
     await this.end();
   }
   // ---------- 4. глэмпинг: папино горловое пение ----------
@@ -151,7 +152,7 @@ class MemoryScene extends Phaser.Scene {
       } else {
         // съёмка: Женя-«ведущая» и маленький Егор
         fig("zh_home_front_0", 110, 126 + laugh(1), { sc: 2 });
-        if (st.bag) { const img = EgorArt.item("bag"); g.drawImage(img, 0, 0, 16, 16, 122, 80, 20, 20); }
+        { const img = EgorArt.item("phone"); g.drawImage(img, 0, 0, 16, 16, 120, 80, 18, 18); }  // Женя снимает на телефон
         const kx = 200, ky = 126;
         if (st.kid === "dance") fig(Math.floor(s * 6) % 2 ? "egk_L" : "egk_R", kx, ky, { sc: 2.4 });
         else if (st.kid === "spin") fig("egk", kx, ky - 22, { sc: 2.4, rot: Math.PI, flip: Math.floor(s * 10) % 2 });

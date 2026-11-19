@@ -6,7 +6,7 @@ window.MapArt = (() => {
   const W = 320, H = 180, R = PK.R, P = PK.P, OL = RK.OL;
   const PLACES = {
     centrale: [238, 36, "CENTRALE"], duomo: [168, 98, "DUOMO"], casa: [240, 132, "CASA NARINA"],
-    sempione: [100, 58, "SEMPIONE"], navigli: [112, 150, "NAVIGLI"], colline: [30, 42, "COLLINE"]
+    sempione: [100, 58, "SEMPIONE"], navigli: [112, 150, "NAVIGLI"], colline: [30, 42, "COLLINE"], lorenzo: [290, 92, "CASA LORENZO"]
   };
   let base = null;
   function build() {
@@ -60,6 +60,7 @@ class TransitScene extends Phaser.Scene {
     car:     { from: "duomo", to: "casa", icon: "walk", via: [[196, 110], [224, 118]], text: "Втроём к Нарине домой" },
     walk:    { from: "casa", to: "sempione", icon: "walk", via: [[210, 112], [168, 80], [134, 64]], text: "Утром — пробежка в парк Семпионе" },
     navigli: { from: "sempione", to: "navigli", icon: "walk", via: [[110, 84], [118, 120]], text: "С Лерой вдоль каналов к Навильи" },
+    party:   { from: "colline", to: "lorenzo", icon: "car", via: [[70, 60], [140, 72], [220, 80], [270, 88]], text: "Вечером — домой к Лоренцо" },
     hills:   { from: "navigli", to: "colline", icon: "car", via: [[90, 120], [60, 84], [40, 56]], text: "С Лоренцо за город, к холмам" }
   };
   init(data) { this.data_ = data || {}; }

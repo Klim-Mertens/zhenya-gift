@@ -33,9 +33,9 @@ class StreetScene extends Phaser.Scene {
   updGoal() { UI.goal(this.gelato ? "Иди к студии Даны: дверь с розовой вывеской справа" : "Джелато у киоска или сразу к студии Даны (справа)"); }
   async findCard() {
     this.cardGot = true; this.zh.frozen = true; if (this.cardImg) this.cardImg.destroy();
-    await UI.say([{ who: "zhs", text: "Не может быть... Сетчатая сумочка на молнии! Та самая, из нашей «рекламы»!" }, { who: "le", text: "Какой рекламы? Тут опять открытка!" }]);
+    await UI.say([{ who: "zhs", text: "Не может быть... Мой старый телефон! На нём же те самые видео с братом!" }, { who: "le", text: "Какие видео? Тут опять открытка!" }]);
     await Postcards.find(this, "video");
-    await UI.say([{ who: "le", text: "Ну и что там было? Ты красная, как помидор!" }, { who: "zhs", text: "Тебе лучше не знать. Скажу только: мой брат — мастер... танца." }]);
+    await UI.say([{ who: "le", text: "Ну и что там было? Ты красная, как помидор!" }, { who: "zhs", text: "Тебе лучше не знать. Скажу только: мой брат — мастер... попы. Долгая история!" }]);
     await Postcards.cameo(this, 250, 112, false);
     await UI.say([{ who: "le", text: "Слушай, а вон тот парень у студии тебе не машет?" }, { who: "zhs", text: "Где?! Уже нет... Это точно Егор!" }]);
     this.zh.frozen = false; this.updGoal();

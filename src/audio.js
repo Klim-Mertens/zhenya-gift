@@ -124,6 +124,11 @@ window.Sound = (() => {
             ["F#5", 1], ["D5", .5], ["B4", .5], ["D5", 1], ["G5", .5], ["F#5", .5],
             ["E5", 1.5], ["D5", .5], ["F#5", 1], ["-", 1]],
       bass: oompa(["Em", "C", "G", "D", "Em", "C", "G", "D"]) },
+    // Вечеринка: «Happy Birthday to You» (общественное достояние), бодрый чиптюн в 3/4
+    birthday: { bpm: 116, lead: "square", bell: true, drums: true,
+      mel: [["-", 2], ["G4", .75], ["G4", .25], ["A4", 1], ["G4", 1], ["C5", 1], ["B4", 2], ["G4", .75], ["G4", .25], ["A4", 1], ["G4", 1], ["D5", 1],
+            ["C5", 2], ["G4", .75], ["G4", .25], ["G5", 1], ["E5", 1], ["C5", 1], ["B4", 1], ["A4", 1], ["F5", .75], ["F5", .25], ["E5", 1], ["C5", 1], ["D5", 1], ["C5", 3]],
+      bass: oompa(["C", "C", "G", "G", "C", "C", "F", "G", "C"], 3) },
     // Воспоминание: тихая «музыкальная шкатулка» (свой мотив)
     memory: { bpm: 84, lead: "sine", bell: true, drums: false,
       mel: [["E5", 1], ["G5", .5], ["A5", .5], ["G5", 1], ["E5", 1], ["D5", 1], ["E5", .5], ["G5", .5], ["C5", 2],
@@ -233,6 +238,8 @@ window.Sound = (() => {
     flap: () => { const t = now(); for (let k = 0; k < 6; k++) noise(t + k * .05, .04, { vol: .12, hp: 900 }); },
     pour: () => { const t = now(); for (let k = 0; k < 8; k++) tone(500 + k * 60, t + k * .06, .06, { type: "sine", vol: .06 }); },
     gulp: () => { const t = now(); tone(180, t, .12, { type: "sine", vol: .25, slide: .6 }); tone(160, t + .25, .12, { type: "sine", vol: .25, slide: .6 }); },
+    party: () => { const t = now(); for (let k = 0; k < 5; k++) noise(t + k * .07, .12, { vol: .12, hp: 2500 + k * 600 }); [523, 659, 784, 1047].forEach((f, i) => tone(f, t + .1 + i * .07, .18, { type: "square", vol: .05 })); },
+    blow: () => { const t = now(); noise(t, .6, { vol: .1, hp: 900 }); },
     cheers: () => { const t = now(); tone(2637, t, .3, { type: "sine", vol: .1, release: .3 }); tone(3520, t + .02, .3, { type: "sine", vol: .06, release: .3 }); },
     // Папа стучит ложкой по крышке кастрюли — «обряд на удачу»
     bong: () => { const t = now(); tone(880, t, .5, { type: "triangle", vol: .16, slide: .98, release: .4 }); tone(1320, t, .3, { type: "sine", vol: .08, release: .3 }); noise(t, .04, { vol: .12, hp: 2000 }); }

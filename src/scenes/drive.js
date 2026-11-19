@@ -245,7 +245,7 @@ class SunsetScene extends Phaser.Scene {
     if (this.stick) { this.tweens.killTweensOf(this.stick); this.tweens.add({ targets: this.stick, scale: 1.4, duration: 400, yoyo: true }); await World.wait(this, 800); this.stick.destroy(); }
     await Postcards.find(this, "glamping");
     await UI.say([
-      { who: "zhs", text: "Пульт, номер с кросса, сумочка, а теперь палочка от папиного костра... Это всё Егор! Он где-то рядом!" },
+      { who: "zhs", text: "Пульт, номер с кросса, старый телефон, а теперь палочка от папиного костра... Это всё Егор! Он где-то рядом!" },
       { who: "lo", text: "Похоже, у твоего брата есть план. И, кажется, я в нём участвую..." },
       { who: "zhs", text: "Лоренцо! Ты что-то знаешь?!" },
       { who: "lo", text: "Я? Niente! Ничего! Поехали домой, amore." }
@@ -253,12 +253,8 @@ class SunsetScene extends Phaser.Scene {
     { const cam = this.cameras.main; cam.pan(160, 90, 900, "Sine.easeInOut"); cam.zoomTo(1, 900, "Sine.easeInOut"); await World.wait(this, 950); }
     Save.store("sunset");
     await UI.card("Глава 4 пройдена", "Закат с Лоренцо ★", 3000);
-    const c = document.getElementById("card"); c.hidden = false; c.classList.remove("show");
-    document.getElementById("ctitle").textContent = "Продолжение следует";
-    document.getElementById("csub").textContent = "Финал: день рождения Жени · Пробел — в главное меню";
-    const key = e => { if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); window.removeEventListener("keydown", key); c.hidden = true; this.scene.start("title"); } };
-    window.addEventListener("keydown", key);
-    this.events.once("shutdown", () => window.removeEventListener("keydown", key));
+    this.cameras.main.fadeOut(900, 0, 0, 0);
+    this.time.delayedCall(950, () => this.scene.start("transit", { route: "party", next: "party" }));
   }
   draw(g, t) {
     const R = PK.R, s = t / 1000;
