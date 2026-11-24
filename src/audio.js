@@ -147,9 +147,18 @@ window.Sound = (() => {
             ["D5", 1], ["G5", .5], ["A#5", .5], ["A5", 1], ["G5", 1], ["F5", .5], ["E5", .5], ["F5", 1], ["F5", 2]],
       bass: oompa(["F", "C", "C", "F", "Bb", "F", "C", "F"], 2) }
   };
+  // Настоящие записи (только в личном офлайн-файле: window.ZG_MEDIA = { имя: "data:audio/mpeg;base64,..." }).
+  // В публичной версии их нет — тогда играет синтезированный трек с тем же именем.
+  const media = {};
+  function mediaFor(name) {
+    const src = window.ZG_MEDIA && window.ZG_MEDIA[name]; if (!src || !ctx) return null;
+    if (!media[name]) { const el = new Audio(src); el.loop = true; ctx.createMediaElementSource(el).connect(musicBus); media[name] = el; }
+    return media[name];
+  }
   function play(name, force) {
     if (track && track.name === name && !force) return;
     stopMusic(); track = { name };
+    const el = mediaFor(name); if (el) { el.currentTime = 0; el.play().catch(() => {}); track.el = el; return; }
     if (!ctx || !TRACKS[name]) return;
     const T = TRACKS[name], beat = 60 / T.bpm;
     const seq = (list) => { const out = []; let t = 0; list.forEach(([n, d]) => { out.push([t, n, d]); t += d; }); return { notes: out, len: t }; };
@@ -194,7 +203,7 @@ window.Sound = (() => {
     };
     step(); timer = setInterval(step, 60);
   }
-  function stopMusic() { if (timer) clearInterval(timer); timer = null; track = null; }
+  function stopMusic() { if (timer) clearInterval(timer); timer = null; if (track && track.el) track.el.pause(); track = null; }
   // ---------- эффекты ----------
   const now = () => ctx ? ctx.currentTime : 0;
   const SFX = {
@@ -308,5 +317,5 @@ window.Sound = (() => {
   function toggleMute() { muted = !muted; if (master) master.gain.value = muted ? 0 : .7; return muted; }
   // сколько долей прошло с начала текущей музыки (для ритм-игры); null — если звука нет
   const beatNow = () => (ctx && track && track.start != null ? (ctx.currentTime - track.start) / track.beat : null);
-  return { beatNow, unlock, play, stopMusic, sfx, toggleMute, ambient, setVolume, get trackName() { return track && track.name; }, get ambName() { return amb.name; }, get volume() { return { ...vol }; }, get muted() { return muted; } };
+  return { beatNow, unlock, play, stopMusic, sfx, toggleMute, ambient, setVolume, get trackName() { return track && track.name; }, get ambName() { return amb.name; }, get volume() { return { ...vol }; }, get muted() { return muted; }, get mediaPlaying() { return !!(track && track.el && !track.el.paused); } };
 })();
