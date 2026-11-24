@@ -15,8 +15,11 @@
   // Кнопка и клавиша звука
   const mute = document.getElementById("mute");
   const toggle = () => { Sound.unlock(); mute.classList.toggle("off", Sound.toggleMute()); };
-  mute.addEventListener("click", toggle);
-  window.addEventListener("keydown", e => { if (e.code === "KeyM") toggle(); });
+  // звук: только клик мышкой по кнопке или клавиша M (она же Ь в русской раскладке); пробел кнопку не нажимает
+  mute.tabIndex = -1;
+  mute.addEventListener("mousedown", e => e.preventDefault());   // кнопка не забирает фокус
+  mute.addEventListener("click", e => { if (e.detail === 0) return; toggle(); mute.blur(); });
+  window.addEventListener("keydown", e => { if (e.code === "KeyM" && !e.repeat) toggle(); });
   window.addEventListener("pointerdown", () => Sound.unlock(), { once: true });
   window.addEventListener("keydown", () => Sound.unlock(), { once: true });
   UI.bindClick();

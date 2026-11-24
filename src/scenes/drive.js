@@ -167,7 +167,7 @@ class SunsetScene extends Phaser.Scene {
     World.backdrop(this, "sun_bg", (g, t) => this.draw(g, t), -1000);
     this.zh = World.npc(this, "zh_summer_front_0", "zh_summer_blink", 138, 124, .3);
     this.lo = World.npc(this, "lo_front_0", "lo_blink", 176, 124, 1.4);
-    this.stick = Postcards.placeItem(this, "glamping", 58, 121); // палочка лежит на скамейке
+    this.stick = Postcards.placeItem(this, "traffic", 58, 121); // папина флешка лежит на скамейке
     // букет — отдельная картинка поверх персонажей (чтобы его было видно)
     if (!this.textures.exists("bouquet")) { const cv = PK.mk(11, 12), g = cv.getContext("2d");
       R_(g); this.textures.addCanvas("bouquet", cv); }
@@ -222,7 +222,9 @@ class SunsetScene extends Phaser.Scene {
       { who: "lo", text: "Мир между Миланом и Москвой! Позвоним твоему папе? Хочу, чтобы он оценил." }
     ]);
     // видеозвонок родителям
-    Sound.sfx("blip", 1.2); await World.wait(this, 300); Sound.sfx("blip", 1.2); await World.wait(this, 500);
+    UI.toast("Видеозвонок папе...", 2600);
+    for (let k = 0; k < 3; k++) { Sound.sfx("ding"); await World.wait(this, 650); }
+    await UI.say([{ who: "", text: "Женя набирает папу по видеосвязи. Гудок... гудок... Папа ответил! На экране телефона — родители." }]);
     await UI.say([
       { who: "papa", text: "Женя! Привет! А это кто там рядом... Ого, что за футболка?!" },
       { who: "papa", text: "Так... половина синяя, половина... КРАСНО-БЕЛАЯ! Лоренцо, ты наш человек!" }
@@ -243,9 +245,9 @@ class SunsetScene extends Phaser.Scene {
     ]);
     { const cam = this.cameras.main; cam.pan(112, 106, 900, "Sine.easeInOut"); cam.zoomTo(1.6, 900, "Sine.easeInOut"); await World.wait(this, 950); }
     if (this.stick) { this.tweens.killTweensOf(this.stick); this.tweens.add({ targets: this.stick, scale: 1.4, duration: 400, yoyo: true }); await World.wait(this, 800); this.stick.destroy(); }
-    await Postcards.find(this, "glamping");
+    await Postcards.find(this, "traffic");
     await UI.say([
-      { who: "zhs", text: "Пульт, номер с кросса, старый телефон, а теперь палочка от папиного костра... Это всё Егор! Он где-то рядом!" },
+      { who: "zhs", text: "Пульт, наклейка с кросса, старый телефон, а теперь папина флешка... Это всё Егор! Он где-то рядом!" },
       { who: "lo", text: "Похоже, у твоего брата есть план. И, кажется, я в нём участвую..." },
       { who: "zhs", text: "Лоренцо! Ты что-то знаешь?!" },
       { who: "lo", text: "Я? Niente! Ничего! Поехали домой, amore." }

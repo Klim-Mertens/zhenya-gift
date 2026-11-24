@@ -6,10 +6,10 @@
 window.Postcards = (() => {
   const LIST = {
     series: { n: 1, item: "remote", name: "пульт от телевизора", text: "Помнишь, как мы смотрели сериалы дома, на диване в зале? «Гравити Фолз», «Время приключений», «Перевал Дятлова», «Игра в кальмара»... Нашёл пульт — и сразу вспомнил наши вечера." },
-    run: { n: 2, item: "bib", name: "номер участника кросса", text: "Помнишь кросс по Коврову этим летом? Восемь километров плечом к плечу. Ты держала темп как настоящая спортсменка, а я еле поспевал. Ты у меня сильная, упорная и самая классная сестра. Горжусь тобой!" },
-    video: { n: 3, item: "phone", name: "старый телефон с видео", text: "Помнишь, как ты снимала меня на телефон? Мне шесть, я танцую «брейкданс», ты кричишь: «Егорка умеет вилять попой! Егор мастер попы!» — и тут я случайно пукнул. Мы смеялись до слёз. Мастер попы помнит всё!" },
+    run: { n: 2, item: "bib", name: "наклейка бегуна, номер 300", text: "Помнишь кросс по Коврову этим летом? Восемь километров плечом к плечу. Ты держала темп как настоящая спортсменка, а я еле поспевал. Ты у меня сильная, упорная и самая классная сестра. Горжусь тобой!" },
+    video: { n: 3, item: "phone", name: "старый телефон с видео", text: "Помнишь, как ты снимала меня на телефон? Мне шесть, я танцую «брейкданс», а ты кричишь: «Егорка умеет вилять попой! Егор мастер попы!» И тут что-то произошло... Мы смеялись до слёз. Мастер попы помнит всё!" },
     dessert: { n: 5, item: "ladle", name: "огромный половник", text: "Помнишь яблочный десерт? Ты попросила чайную ложечку, а я положил тебе огромный половник. Это была забота: десерта должно быть много! С днём рождения, сестрёнка." },
-    glamping: { n: 4, item: "stick", name: "палочка от костра", text: "Помнишь папин день рождения в глэмпинге? Костёр, палка, металлическая тарелка и папино горловое пение. Мы смеялись до слёз." }
+    traffic: { n: 4, item: "flash", name: "папина флешка с музыкой", text: "Помнишь пробку во Владимире? Все стоят и скучают, а папа врубает музыку на полную, и наша машина качается в такт. Самая весёлая пробка в жизни!" },
   };
   const TOTAL = 5;
   function got() { try { return JSON.parse(localStorage.getItem("zhenya-gift-cards") || "[]"); } catch (e) { return []; } }
@@ -23,23 +23,27 @@ window.Postcards = (() => {
     el.querySelector("canvas").getContext("2d").drawImage(EgorArt.item(c.item), 0, 0);
     el.querySelector(".pci").textContent = c.name; el.querySelector(".pct").textContent = c.text;
     el.hidden = false; Sound.sfx("sparkle");
+    if (id === "run") Sound.play("phonk");   // к открытке про кросс — свой фонк-трек
     return new Promise(res => {
       const done = e => { if (e.type === "keydown" && !["Space", "Enter", "NumpadEnter"].includes(e.code)) return; e.preventDefault(); e.stopImmediatePropagation();
         window.removeEventListener("keydown", done, true); el.removeEventListener("pointerdown", done); el.hidden = true; Sound.sfx("select"); setTimeout(res, 80); };
       setTimeout(() => { window.addEventListener("keydown", done, true); el.addEventListener("pointerdown", done); }, 500);
     });
   }
-  async function find(scene, id) {
+  // воспоминание поверх текущей сцены: сцена на паузе, цель/список спрятаны, музыка потом возвращается
+  async function recall(scene, id) {
     const game = scene.game, track = Sound.trackName, amb = Sound.ambName;
-    await show(id); mark(id);
-    // воспоминание поверх: текущая сцена на паузе, музыка возвращается после
     scene.scene.pause();
-    // на время воспоминания прячем цель и список заданий текущей главы
     const hide = ["goal", "tasks", "hint"].map(k => document.getElementById(k)).filter(Boolean), was = hide.map(e => e.hidden);
     hide.forEach(e => { e.hidden = true; });
     await new Promise(res => { game.events.once("memory-done", res); scene.scene.launch("memory", { id, from: scene.scene.key }); scene.scene.bringToTop("memory"); });
     hide.forEach((e, i) => { if (e.id !== "hint") e.hidden = was[i]; });
     scene.scene.resume(); Sound.play(track); Sound.ambient(amb);
+  }
+  // открытка от Егора + воспоминание
+  async function find(scene, id) {
+    await show(id); mark(id);
+    await recall(scene, id);
     UI.toast(`Открытка ${LIST[id].n} из ${TOTAL} ★`, 2200);
   }
   // вещь лежит в мире (маленькая, с бликом)
@@ -57,14 +61,24 @@ window.Postcards = (() => {
     spr.setTexture("eg_back_0"); scene.tweens.add({ targets: spr, alpha: 0, x: x + (flip ? -20 : 20), duration: 700 });
     await World.wait(scene, 750); spr.destroy();
   }
-  return { find, show, placeItem, cameo, LIST, got, TOTAL };
+  // Женя на кроссе: кепка и спортивная футболка (кадры zh_sport_front_0..2)
+  function sport(scene) {
+    if (scene.textures.exists("zh_sport_front_0")) return;
+    const T = People.templates(), pal = Object.assign({}, T.ZH_PAL, { W: "#f05a7a", w: "#c83a5a", G: "#ffffff", J: "#2a2a34", j: "#1a1a24", C: "#2a3a6a", V: "#1a2448", B: "#f4f4f0" });
+    const CAP = ["......oooo......", "....ooCCCCoo....", "...oCCCCCCCCo...", "..oCCCCGCCCCCo..", ".oVVVVVVVVVVVVo."];
+    const top = T.ZH_FRONT.map((r, i) => i < 5 ? CAP[i] : r);
+    ["stand", "a", "b"].forEach((v, i) => { const legs = T.LEGS[v].map((r, y) => y >= 2 && y <= 3 ? r.replace(/J/g, "S") : r);
+      scene.textures.addCanvas(`zh_sport_front_${i}`, PK.sprite(top.concat(legs), pal)); });
+  }
+  return { find, recall, show, placeItem, cameo, sport, LIST, got, TOTAL };
 })();
 
 class MemoryScene extends Phaser.Scene {
   constructor() { super("memory"); }
-  init(data) { data = data || {}; this.mid = Postcards.LIST[data.id] ? data.id : "series"; this.from = data.from; this.test = !!data.test || !data.from; }
+  init(data) { data = data || {}; this.mid = typeof MemoryScene.prototype[data.id] === "function" && !["create", "init", "end", "draw", "update"].includes(data.id) ? data.id : "series"; this.from = data.from; this.test = !!data.test || !data.from; }
   create() {
-    Sound.play("memory"); Sound.ambient(null);
+    Sound.play(this.mid === "run" ? "phonk" : "memory"); Sound.ambient(null);
+    Postcards.sport(this);
     this.cameras.main.fadeIn(600, 255, 230, 190);
     this.t0 = this.time.now; this.state = {}; this.chars = [];
     const E = this.textures; this.src = k => E.get(k).getSourceImage();
@@ -134,6 +148,19 @@ class MemoryScene extends Phaser.Scene {
     this.state.laugh = false;
     await this.end();
   }
+  // ---------- 4. пробка во Владимире: папа врубает музыку ----------
+  async traffic() {
+    this.state.loud = 0;
+    await UI.say([{ who: "", text: "Владимир, пробка. Машины стоят, все скучают." }, { who: "papa", text: "Так, что-то мы приуныли. Сейчас исправим!" }]);
+    this.state.loud = this.time.now; Sound.play("sprint", true);
+    await UI.say([{ who: "", text: "Папа выкручивает громкость на максимум. Машина качается в такт!" },
+      { who: "zh", text: "Па-а-ап! Нас слышно на всю улицу!" }, { who: "eg", text: "Смотри, в соседней машине тоже танцуют!" },
+      { who: "papa", text: "Пробка — не повод скучать! Громче!" }]);
+    this.state.laugh = true; Sound.sfx("laugh"); await World.wait(this, 1500);
+    await UI.say([{ who: "zh", text: "Ахаха! Лучшая пробка в моей жизни." }]);
+    this.state.laugh = false; this.state.loud = 0; Sound.play("memory", true);
+    await this.end();
+  }
   // ---------- 5. яблочный десерт и половник ----------
   async dessert() {
     this.state.ladle = 0;
@@ -173,7 +200,7 @@ class MemoryScene extends Phaser.Scene {
         { const img = EgorArt.item("phone"); g.drawImage(img, 0, 0, 16, 16, 120, 80, 18, 18); }  // Женя снимает на телефон
         const kx = 200, ky = 126;
         if (st.kid === "dance") fig(Math.floor(s * 6) % 2 ? "egk_L" : "egk_R", kx, ky, { sc: 2.4 });
-        else if (st.kid === "spin") fig("egk", kx, ky - 22, { sc: 2.4, rot: Math.PI, flip: Math.floor(s * 10) % 2 });
+        else if (st.kid === "spin") fig("egk", kx, ky - 44, { sc: 2.4, rot: Math.PI, flip: Math.floor(s * 10) % 2 });   // стойка на голове: голова у пола, всё в кадре
         else fig(Math.floor(s * 2.7) % 6 === 0 ? "egk_blink" : "egk", kx, ky + laugh(2), { sc: 2.4 });
         if (st.puk && t - st.puk < 1400) { const k = (t - st.puk) / 1400; g.save(); g.globalAlpha = 1 - k; StationArt.text(g, "ПУК!", kx + 12, ky - 30 - k * 20, "#6a8a3a", 2); PK.ell(g, kx - 10 - k * 10, ky - 14, 4 + k * 6, 3 + k * 4, "#b8c890"); g.restore(); }
         // рамка видоискателя
@@ -192,8 +219,24 @@ class MemoryScene extends Phaser.Scene {
       StationArt.text(g, "КОВРОВ", 8, 8, "#2a4a8a", 2);
       R(g, 196, 8, 60, 18, "#f4f0e8"); RK.box(g, 196, 8, 60, 18, RK.OL); StationArt.text(g, `${st.km || 0} КМ`, 208, 12, "#d8302c", 2);
       const f = st.run ? 1 + Math.floor(s * 7) % 2 : 0, bob = st.run ? Math.abs(Math.sin(s * 14)) * 2 : 0;
-      fig(`zh_summer_front_${f}`, 136, 128 - bob, { sc: 2.4 }); fig(`eg_front_${st.run ? 2 - (Math.floor(s * 7) % 2) : 0}`, 186, 128 - (st.run ? Math.abs(Math.cos(s * 14)) * 2 : 0), { sc: 2.4 });
+      fig(`zh_sport_front_${f}`, 136, 128 - bob, { sc: 2.4 }); fig(`eg_front_${st.run ? 2 - (Math.floor(s * 7) % 2) : 0}`, 186, 128 - (st.run ? Math.abs(Math.cos(s * 14)) * 2 : 0), { sc: 2.4 });
       if (st.tired) { R(g, 128, 70, 3, 3, "#9ad0f0"); R(g, 196, 68, 3, 3, "#9ad0f0"); }
+    } else if (this.mid === "traffic") {
+      // вечерний город, пробка; наша машина крупно, в окнах — папа, Женя и Егор
+      PK.gradV(g, 0, 0, 320, 70, ["#f2a46a", "#f8d0a0"]); for (let k = 0; k < 9; k++) R(g, k * 38, 30 + (k * 13) % 24, 30, 70, ["#8a7a8a", "#9a8aa0", "#7a6a7a"][k % 3]);
+      for (let k = 0; k < 30; k++) R(g, 4 + (k * 41) % 310, 36 + (k * 17) % 34, 3, 3, "#ffe0a0");
+      R(g, 0, 96, 320, 84, "#5a5a64"); for (let x = 0; x < 320; x += 30) R(g, x, 112, 16, 2, "#e8e0c8");
+      [[-10, "#c8402a"], [250, "#3a7ac8"]].forEach(([x, c]) => { R(g, x, 74, 70, 22, c); R(g, x + 10, 64, 46, 12, c); R(g, x + 14, 66, 38, 9, "#a8c8e0"); PK.ell(g, x + 14, 98, 6, 6, "#1a1a1e"); PK.ell(g, x + 56, 98, 6, 6, "#1a1a1e"); R(g, x + 66, 80, 4, 4, "#ff4a3a"); });
+      const loud = this.state.loud, bounce = loud ? Math.round(Math.abs(Math.sin(s * 9)) * 3) : 0, cx = 90, cy = 104 - bounce;
+      R(g, cx, cy - 26, 150, 28, "#e8e0d0"); R(g, cx + 22, cy - 50, 100, 26, "#e8e0d0"); RK.box(g, cx, cy - 26, 150, 28, RK.OL);
+      R(g, cx + 28, cy - 46, 40, 20, "#a8c8e0"); R(g, cx + 74, cy - 46, 42, 20, "#a8c8e0");
+      const head = (key, x, y) => { const img = src(key); g.drawImage(img, 0, 0, 16, 13, x, y + laugh(x), 16, 13); };
+      head("pa_home_idle", cx + 34, cy - 42); head("zh_home_front_0", cx + 78, cy - 42); head("eg_front_0", cx + 96, cy - 42);
+      R(g, cx + 28, cy - 30, 88, 4, "#e8e0d0"); RK.box(g, cx + 22, cy - 50, 100, 26, RK.OL);
+      PK.ell(g, cx + 30, cy + 2, 10, 10, "#1a1a1e"); PK.ell(g, cx + 30, cy + 2, 4, 4, "#8a8a92"); PK.ell(g, cx + 120, cy + 2, 10, 10, "#1a1a1e"); PK.ell(g, cx + 120, cy + 2, 4, 4, "#8a8a92");
+      R(g, cx + 146, cy - 20, 4, 6, "#ffe070");
+      if (loud) for (let k = 0; k < 6; k++) { const ph = ((t - loud) / 900 + k / 6) % 1; const nx = Math.round(cx + 40 + k * 18 + Math.sin(ph * 6) * 6), ny = Math.round(cy - 56 - ph * 40), c = ["#ff5a7a", "#ffd84a", "#5ad0ff"][k % 3];
+        PK.ell(g, nx, ny + 6, 2, 2, c); R(g, nx + 1, ny, 1, 6, c); R(g, nx + 1, ny, 3, 1, c); }   // нотки
     } else if (this.mid === "dessert") {
       // кухня: плитка, окно со снегом, стол с десертом
       R(g, 0, 0, 320, 106, "#f2e8d4"); for (let x = 0; x < 320; x += 10) for (let y = 0; y < 106; y += 10) { R(g, x, y, 10, 1, "#ddd0b8"); R(g, x, y, 1, 10, "#ddd0b8"); }

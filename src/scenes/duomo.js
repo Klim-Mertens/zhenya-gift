@@ -74,7 +74,8 @@ class DuomoScene extends Phaser.Scene {
     // расставляем всех у собора
     const zs = this.zh.spr; this.tweens.add({ targets: zs, x: 150, y: 146, duration: 500 }); this.zh.face("front");
     this.naF.active = false; this.giF.active = false;
-    this.tweens.add({ targets: this.naF.spr, x: 132, y: 146, duration: 500 }); this.tweens.add({ targets: this.giF.spr, x: 170, y: 148, duration: 500 });
+    // в начале все разбрелись: Нарина слева, Джан у киоска справа — сразу снять не выйдет
+    this.tweens.add({ targets: this.naF.spr, x: 72, y: 146, duration: 500 }); this.tweens.add({ targets: this.giF.spr, x: 232, y: 148, duration: 500 });
     await World.wait(this, 550); this.naF.dir = this.giF.dir = "front"; this.naF.spr.setFlipX(false); this.giF.spr.setFlipX(false);
     const pig = this.pigCv || (this.pigCv = (() => { const c = PK.mk(10, 8), g = c.getContext("2d"), R = PK.R;
       R(g, 1, 3, 6, 3, "#8a8a98"); R(g, 6, 1, 3, 3, "#6a6a78"); PK.P(g, 8, 2, "#2a1a14"); R(g, 9, 2, 1, 1, "#e8902a"); R(g, 2, 3, 3, 1, "#b8b8c8"); R(g, 6, 4, 2, 1, "#7ab0a0");
@@ -82,9 +83,9 @@ class DuomoScene extends Phaser.Scene {
     await UI.rules("Селфи у Дуомо", [
       { keys: ["←", "↑", "↓", "→"], text: "Двигай рамку видоискателя стрелками." },
       { icons: [this.textures.get("na_front_0").getSourceImage(), this.textures.get("zh_summer_front_0").getSourceImage(), this.textures.get("gi_idle").getSourceImage(), pig], text: "В кадр должны попасть Нарина, Женя, Джан и голубь. Сверху видно, кто уже в кадре." },
-      { keys: ["Пробел"], text: "Сделать снимок. Лови момент: Джан всё время отходит к киоску, а голубь гуляет где хочет!" }
+      { keys: ["Пробел"], text: "Сделать снимок. Друзья то разбредаются, то собираются вместе. Все рядом бывают примерно раз в 4–5 секунд — лови момент!" }
     ]);
-    this.sm = { x: 70, y: 74, w: 104, h: 68, t: 0, tries: 0, pig: { x: 220, y: 158, vx: -14, hop: 0 }, ok: {} };
+    this.sm = { x: 70, y: 74, w: 104, h: 68, t: 0, tries: 0, pig: { x: 290, y: 158, vx: -14, hop: 0 }, ok: {} };
     this.vfKeys = this.input.keyboard.addKeys("UP,DOWN,LEFT,RIGHT,W,A,S,D");
     this.vfLayer = World.backdrop(this, "du_vf", (g, t) => { if (this.sm) this.drawVF(g, t); }, 8000);
     await new Promise(res => {
@@ -164,14 +165,17 @@ class DuomoScene extends Phaser.Scene {
     m.t += d;
     const vx = ((k.RIGHT.isDown || k.D.isDown) ? 1 : 0) - ((k.LEFT.isDown || k.A.isDown) ? 1 : 0), vy = ((k.DOWN.isDown || k.S.isDown) ? 1 : 0) - ((k.UP.isDown || k.W.isDown) ? 1 : 0);
     m.x = Math.max(0, Math.min(320 - m.w, m.x + vx * 80 * d)); m.y = Math.max(0, Math.min(180 - m.h, m.y + vy * 80 * d));
-    // Джан медленно уходит к киоску и возвращается, Нарина пританцовывает
-    this.giF.spr.x = 170 + Math.max(0, Math.sin(m.t * .5)) * 46; this.giF.spr.setFlipX(Math.cos(m.t * .5) < 0 && Math.sin(m.t * .5) > .05);
-    this.naF.spr.x = 132 + Math.sin(m.t * 1.3) * 5;
-    // голубь гуляет и иногда меняет направление
-    const pg = m.pig; pg.x += pg.vx * d; pg.hop += d;
+    // Все то расходятся, то сходятся: a = 1 — разбрелись, a = 0 — стоят рядом. Сходятся в t ≈ 4.6, 9.1, 13.6 с...,
+    // первые 3 с все точно врозь. Двигаются с ограниченной скоростью, без рывков.
+    const P = 4.5, a = m.t < 3 ? 1 : (1 - Math.cos((m.t - 4.6) / P * 2 * Math.PI)) / 2, cyc = Math.round((m.t - 4.6) / P);
+    const step = (cur, target, v) => cur + Math.max(-v * d, Math.min(v * d, target - cur));
+    const gx = this.giF.spr.x, nGx = step(gx, 170 + 74 * a, 70); this.giF.spr.x = nGx; this.giF.spr.setFlipX(nGx > gx + .01);
+    this.naF.spr.x = step(this.naF.spr.x, 132 - 72 * a + Math.sin(m.t * 1.3) * 3, 70);
+    // голубь гуляет то слева, то справа и подходит к компании, когда все вместе
+    const pg = m.pig, ptx = 158 + (cyc % 2 ? -1 : 1) * 84 * a + Math.sin(m.t * 2.1) * 4, px0 = pg.x;
+    pg.x = step(pg.x, ptx, 48); pg.vx = pg.x >= px0 ? 1 : -1; pg.hop += d;
     m.gt = (m.gt || 0) - dt; if (m.gt <= 0) { m.gt = 150; const ok = this.inFrame(), f = (n, v) => `${n} ${v ? "✓" : "✗"}`;
       UI.goal(`В кадре: ${f("Нарина", ok.na)} · ${f("Женя", ok.zh)} · ${f("Джан", ok.gi)} · ${f("голубь", ok.pig)} · Пробел — снимок`); }
-    if (pg.x < 96 || pg.x > 236 || Math.random() < d * .25) pg.vx = (pg.x < 96 ? 1 : pg.x > 236 ? -1 : (Math.random() < .5 ? -1 : 1)) * (10 + Math.random() * 12);
   }
   leave() {
     this.zh.frozen = true; UI.goal("");

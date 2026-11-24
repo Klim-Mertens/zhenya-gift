@@ -134,8 +134,8 @@ body { display: grid; place-items: center; font-family: "Tiny5", monospace; colo
 #tasks { transition: opacity .25s; }
 #tasks.dim { opacity: .18; }
 #tasks .tf { font-size: calc(4px * var(--z)); color: #a89880; margin-top: calc(1px * var(--z)); }
-#tasks.mini .tr, #tasks:not(.mini) .tf { display: none; }
-#tasks.mini .tf { display: block; }
+#tasks.mini .tr, #tasks.mini .tfo, #tasks:not(.mini) .tfm { display: none; }
+#tasks .tf { color: #ffd870; }
 
 /* открытка «Помнишь, как мы...?» — тёплая бумага, вещь слева, текст справа */
 #postcard { position: absolute; inset: 0; display: grid; place-content: center; background: rgba(20, 12, 10, .55); pointer-events: auto; }

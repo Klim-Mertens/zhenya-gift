@@ -75,7 +75,7 @@ window.World = (() => {
     el.hidden = false; el.innerHTML = "";
     const h = document.createElement("div"); h.className = "th"; h.textContent = left ? `★ Интересное рядом: ${items.length - left} из ${items.length}` : "Всё осмотрено ★"; el.appendChild(h);
     items.forEach(it => { const r = document.createElement("div"); r.className = "tr" + (it.taskDone ? " done" : ""); r.textContent = (it.taskDone ? "✓ " : "· ") + it.task; el.appendChild(r); });
-    const f = document.createElement("div"); f.className = "tf"; f.textContent = "Tab — показать список"; el.appendChild(f);
+    const f = document.createElement("div"); f.className = "tf"; f.innerHTML = '<span class="tfo">Tab — скрыть список</span><span class="tfm">Tab — показать список</span>'; el.appendChild(f);
     el.classList.toggle("all", !left);
     if (expand) { tpOpen = true; el.classList.remove("mini"); tpTimer = setTimeout(() => { tpOpen = false; el.classList.add("mini"); }, left ? 7000 : 3000); }
   }

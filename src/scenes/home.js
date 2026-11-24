@@ -47,6 +47,7 @@ class HomeScene extends Phaser.Scene {
       { x: 229, y: 62, r: 16, label: "посмотреть на полку с фото", task: "посмотреть фото на полке", use: () => this.closeup("photos", { x: 229, y: 30 }, [
         { who: this.zhWho(), text: "Фото с папиного дня рождения в глэмпинге! Папа пел шаманские песни у костра и стучал палкой по железной чаше с огнём." },
         { who: "papa", text: "Это был обряд! Для хорошей погоды. И ведь сработало: дождь пошёл только утром." },
+        { recall: "glamping" },
         { who: this.zhWho(), text: "А это яблочный десерт. Я попросила у брата чайную ложечку, а он принёс огромный половник. До сих пор смешно." },
         { who: this.zhWho(), text: "Медаль за кросс по Коврову, целых восемь километров! Мы бежали вместе с братом. Ноги потом болели три дня, но было здорово." },
         { who: this.zhWho(), text: "И общая фотка, вся семья. Надо сделать новую, когда все приедут ко мне в гости." }]) },
@@ -87,7 +88,8 @@ class HomeScene extends Phaser.Scene {
     this.close = name; this.cst = { ch: 0 }; this.closeImg.setVisible(true);
     cam.fadeIn(220, 255, 255, 255); await World.wait(this, 240);
     // реплики по одной: у телевизора реплика может переключить канал
-    for (const L of lines) { if (L.ch !== undefined && L.ch !== this.cst.ch) { this.cst.ch = L.ch; Sound.sfx("blip", 2); } await UI.say([L]); }
+    for (const L of lines) { if (L.recall) { await Postcards.recall(this, L.recall); continue; }   // воспоминание прямо из крупного плана
+      if (L.ch !== undefined && L.ch !== this.cst.ch) { this.cst.ch = L.ch; Sound.sfx("blip", 2); } await UI.say([L]); }
     cam.fadeOut(160, 0, 0, 0); await World.wait(this, 170);
     this.close = null; this.closeImg.setVisible(false);
     cam.fadeIn(260, 0, 0, 0);
