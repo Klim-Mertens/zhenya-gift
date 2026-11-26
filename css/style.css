@@ -156,3 +156,19 @@ body { display: grid; place-items: center; font-family: "Tiny5", monospace; colo
 #postcard .pcn { position: absolute; right: calc(4px * var(--z)); top: calc(3px * var(--z)); font-size: calc(5px * var(--z)); color: #9a7a60; }
 @keyframes pcIn { from { transform: rotate(-8deg) scale(.6); opacity: 0; } to { transform: rotate(-1.5deg) scale(1); opacity: 1; } }
 @keyframes blinkk { 50% { opacity: .35; } }
+
+/* финальные титры */
+#credits { position: absolute; left: 0; right: 0; top: 0; height: calc(126px * var(--z)); overflow: hidden; pointer-events: none; -webkit-mask-image: linear-gradient(transparent 0, #000 12%, #000 88%, transparent 100%); mask-image: linear-gradient(transparent 0, #000 12%, #000 88%, transparent 100%); }
+#credits .cr-roll { position: absolute; left: 0; right: 0; top: 0; text-align: center; color: #f4ead8; }
+#credits .cr-shapes { color: #ff4a8a; font-size: calc(10px * var(--z)); letter-spacing: calc(4px * var(--z)); }
+#credits .cr-title { font-size: calc(22px * var(--z)); color: #ffe9b0; text-shadow: calc(2px * var(--z)) calc(2px * var(--z)) 0 #c8402a; margin-top: calc(4px * var(--z)); }
+#credits .cr-sub { font-size: calc(8px * var(--z)); color: #ff9ac0; margin-bottom: calc(14px * var(--z)); }
+#credits .cr-h { font-size: calc(6px * var(--z)); color: #ff4a8a; margin: calc(12px * var(--z)) 0 calc(4px * var(--z)); letter-spacing: calc(1px * var(--z)); }
+#credits .cr-row { display: flex; align-items: center; justify-content: center; gap: calc(4px * var(--z)); margin: calc(2px * var(--z)) 0; }
+#credits .cr-row img { width: calc(16px * var(--z)); height: calc(16px * var(--z)); image-rendering: pixelated; }
+#credits .cr-role { font-size: calc(5px * var(--z)); color: #b8a8c8; width: calc(110px * var(--z)); text-align: right; }
+#credits .cr-name { font-size: calc(7px * var(--z)); color: #ffe9b0; width: calc(70px * var(--z)); text-align: left; }
+#credits .cr-line { font-size: calc(6px * var(--z)); margin: calc(1px * var(--z)) 0; }
+#credits .cr-line.big { font-size: calc(12px * var(--z)); color: #ffe9b0; }
+#credits .cr-line b { color: #8aff8a; font-weight: 400; }
+#credits .cr-end { font-size: calc(16px * var(--z)); color: #ffe9b0; margin-top: calc(30px * var(--z)); text-shadow: calc(1px * var(--z)) calc(1px * var(--z)) 0 #c8402a; }

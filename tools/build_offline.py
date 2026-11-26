@@ -18,7 +18,18 @@ def read(p):
 
 s = read("index.html")
 s = s.replace('<link rel="stylesheet" href="css/style.css">', "<style>\n" + read("css/style.css") + "\n</style>")
-s = re.sub(r'<script src="([^"]+)"></script>', lambda m: "<script>\n" + read(m.group(1)).replace("</script", "<\\/script") + "\n</script>", s)
+def inline(m):
+    src = m.group(1)
+    if src.startswith("private/"):   # личные файлы — из папки private (если её нет, тег просто убираем)
+        path = os.path.join(private or "", os.path.basename(src))
+        if not private or not os.path.exists(path):
+            return ""
+        with open(path, encoding="utf-8") as f:
+            code = f.read()
+    else:
+        code = read(src)
+    return "<script>\n" + code.replace("</script", "<\\/script") + "\n</script>"
+s = re.sub(r'<script src="([^"]+)"></script>', inline, s)
 
 if private and os.path.exists(os.path.join(private, "media.json")):
     with open(os.path.join(private, "media.json"), encoding="utf-8") as f:

@@ -176,12 +176,15 @@ class PartyScene extends Phaser.Scene {
     Sound.sfx("shutter"); this.st.flash = this.time.now; await World.wait(this, 900);
     Save.store("party");
     await UI.card("С днём рождения, Женя!", "Все, кто тебя любит, сегодня рядом ★", 3600);
-    const c = document.getElementById("card"); c.hidden = false; c.classList.remove("show");
-    document.getElementById("ctitle").textContent = "Продолжение следует";
-    document.getElementById("csub").textContent = "Пробел — в главное меню";
-    const key = ev => { if (ev.code === "Space" || ev.code === "Enter") { ev.preventDefault(); window.removeEventListener("keydown", key); c.hidden = true; this.scene.start("title", { music: "credits" }); } };
-    window.addEventListener("keydown", key);
-    this.events.once("shutdown", () => window.removeEventListener("keydown", key));
+    // финальная игра во дворе
+    await UI.say([
+      { who: "papa", text: "Так, а теперь — последняя игра! Все во двор!" },
+      { who: "eg", text: "Помнишь «Игру в кальмара», которую мы смотрели? Сейчас будет своя версия." },
+      { who: "zhs", text: "Только не говорите, что папа будет куклой..." },
+      { who: "papa", text: "Ещё как буду!" }
+    ]);
+    this.cameras.main.fadeOut(900, 0, 0, 0);
+    this.time.delayedCall(950, () => this.scene.start("redlight"));
   }
   burst(x, y, n) {
     const cols = ["#ff5a7a", "#ffd84a", "#5ad0ff", "#8aff8a", "#ff9aff", "#ffffff"];
