@@ -182,11 +182,15 @@ window.Sound = (() => {
             tone(f, tt, Math.min(len, .16), { type: "square", vol: .07, bus: musicBus, release: .14 });
             tone(f * 1.5, tt, Math.min(len, .12), { type: "square", vol: .045, bus: musicBus, release: .1 });
             tone(f * 2, tt, .04, { type: "triangle", vol: .05, bus: musicBus, release: .05 });
+          } else if (T.piano) {                                   // «пиксельное фортепиано»: удар + затухание (короткое тело, длинный хвост)
+            tone(f, tt, Math.min(len, .18), { type: "triangle", vol: .16, bus: musicBus, release: Math.min(1.4, len * .8) });
+            tone(f * 2, tt, .06, { type: "square", vol: .03, bus: musicBus, release: Math.min(.6, len * .4) });
           } else tone(f, tt, len, { type: T.lead, vol: T.lead === "square" ? .08 : .12, bus: musicBus, release: .12 });
           if (T.bell) tone(f * 2, tt, .25, { type: "sine", vol: .05, bus: musicBus, release: .35 }); });
         if (T.tamb) for (let k = 0; k < 2; k++) { const tt = start + (a + k * .5) * beat; noise(tt, .05, { vol: k ? .03 : .06, bus: musicBus, hp: 6500 }); noise(tt + .02, .04, { vol: .02, bus: musicBus, hp: 8000 }); }
         at(bas, a, b, (tt, n, d) => { const f = NOTE(n); if (!f) return;
           if (T.phonk) { tone(f, tt, d * beat * .95, { type: "sine", vol: .42, bus: musicBus, release: .15 }); tone(f * 2, tt, d * beat * .9, { type: "triangle", vol: .12, bus: musicBus, release: .12 }); tone(f * 3, tt, .05, { type: "square", vol: .05, bus: musicBus }); }  // 808
+          else if (T.piano) tone(f, tt, Math.min(d * beat * .5, .3), { type: "triangle", vol: .15, bus: musicBus, release: Math.min(1.6, d * beat * .6) });
           else tone(f, tt, d * beat * .85, { type: "triangle", vol: .14, bus: musicBus, release: .1 }); });
         if (T.phonk) {                                            // фонк-бит: бочка 1 и «и» 3-й, хлопок на 2 и 4, хэт 16-ми, раз в 4 такта — дробь
           const tt = start + a * beat, pos = a % 4, bar = Math.floor(a / 4);
