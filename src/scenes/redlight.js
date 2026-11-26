@@ -1,7 +1,8 @@
 /* Мини-игра «Красный свет, зелёный свет» — отсылка на «Игру в кальмара».
    Вместо гигантской куклы — папа в футболке «Спартака». Пока он кричит «МО-СКОВ-СКИЙ СПАР-…» спиной к нам, можно бежать (держи →).
    На «ТАК!» он оборачивается — надо замереть. Двинулась — папа «ловит» и отправляет на пару шагов назад (не на старт).
-   Рядом бегут Лера и Нарина, их тоже иногда ловят. После 3 поимок можно пропустить.
+   Рядом бегут Лера и Нарина: чуть медленнее Жени, тоже ошибаются; если Женя стоит, они добегают до красной линии и останавливаются.
+   Все в зелёных костюмах как в сериале, у Жени номер 456. После 3 поимок можно пропустить.
    Идёт после вечеринки у Лоренцо (во дворе), после неё — титры. */
 "use strict";
 class RedLightScene extends Phaser.Scene {
@@ -13,7 +14,8 @@ class RedLightScene extends Phaser.Scene {
     this.papaBack = this.makePapaBack(); this.bg = this.makeBg();
     this.START = 24; this.FINISH = 262; this.G = 150;
     this.zh = { x: this.START, t: 0, moving: false };
-    this.npcs = [{ key: "le_kit", name: "Лера", x: this.START, y: 132, sp: 46, t: 0, react: 0 }, { key: "na", name: "Нарина", x: this.START, y: 166, sp: 34, t: 0, react: 0 }];
+    this.npcs = [{ key: "le_kit", name: "Лера", num: "067", x: this.START, y: 132, sp: 31, f: 1, t: 0, react: 0 }, { key: "na", name: "Нарина", num: "218", x: this.START, y: 166, sp: 25, f: 1, t: 0, react: 0 }];
+    this.kit = {}; ["zh_summer", "le_kit", "na"].forEach(k => [0, 1].forEach(i => { this.kit[`${k}_${i}`] = this.greenKit(`${k}_side_${i}`); }));
     this.state = "intro"; this.light = "green"; this.syl = []; this.caught = 0; this.flashT = 0; this.round = 0;
     this.keys = this.input.keyboard.addKeys("RIGHT,D,LEFT,A");
     this.events.once("shutdown", () => { document.getElementById("banner").hidden = true; });
@@ -31,6 +33,28 @@ class RedLightScene extends Phaser.Scene {
     // белая полоса «Спартака» спереди не видна со спины — красим её в красный
     for (let x = 0; x < 16; x++) { const i = (15 * 16 + x) * 4; if (d[i] === 0xf4 && d[i + 1] === 0xf0) { d[i] = 0xd8; d[i + 1] = 0x20; d[i + 2] = 0x2c; } }
     g.putImageData(id, 0, 0); return cv;
+  }
+  // зелёный спортивный костюм как в сериале: одежда (всё ниже шеи, кроме кожи, волос и контура) — в зелёный, на груди белый номер
+  greenKit(key) {
+    const src = this.textures.get(key).getSourceImage(), w = src.width, h = src.height, cv = PK.mk(w, h), g = cv.getContext("2d"); g.drawImage(src, 0, 0);
+    const id = g.getImageData(0, 0, w, h), d = id.data, hair = new Set(), key3 = i => (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
+    const OL = key3(0 + (0 * w + 6) * 4);   // контур — верхний пиксель головы
+    for (let y = 0; y < 9; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; if (d[i + 3]) hair.add(key3(i)); }
+    const skin = i => d[i] > 195 && d[i + 1] > 140 && d[i] - d[i + 2] > 40 && d[i] - d[i + 2] < 110;
+    for (let y = 12; y < h - 1; y++) for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; if (!d[i + 3]) continue; const k = key3(i);
+      if (k === OL || hair.has(k) || skin(i)) continue;
+      const lum = (d[i] * .3 + d[i + 1] * .59 + d[i + 2] * .11) / 255, c = lum > .7 ? [0x3a, 0xa8, 0x82] : lum > .4 ? [0x2a, 0x8a, 0x6a] : [0x1e, 0x6a, 0x52];
+      d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; }
+    g.putImageData(id, 0, 0);
+    const cy = h - 11; PK.R(g, 8, cy, 3, 2, "#f4f0e8");   // белая нашивка с номером на груди
+    return cv;
+  }
+  // номер игрока над головой (свой мини-шрифт 3×5)
+  num(g, s, cx, y, col) {
+    const F = { 0: "111101101101111", 1: "010110010010111", 2: "111001111100111", 4: "101101111001001", 5: "111100111001111", 6: "111100111101111", 7: "111001010010010", 8: "111101111101111" };
+    const w = s.length * 4 - 1, x0 = Math.round(cx - w / 2);
+    PK.R(g, x0 - 1, y - 1, w + 2, 7, "rgba(20,30,26,.7)");
+    [...s].forEach((ch, k) => { const f = F[ch] || F[0]; for (let i = 0; i < 15; i++) if (f[i] === "1") PK.R(g, x0 + k * 4 + i % 3, y + Math.floor(i / 3), 1, 1, col); });
   }
   makeBg() {
     // двор в духе «Игры в кальмара»: стены, расписанные небом и облаками, песочный пол, дерево за папой, фигуры ○△□
@@ -54,13 +78,13 @@ class RedLightScene extends Phaser.Scene {
   async intro() {
     await UI.say([
       { who: "papa", text: "Женя! А ну-ка, сыграем в игру. Помнишь, вы с братом смотрели сериал про кальмара?" },
-      { who: "zhs", text: "Пап... только не говори, что ты кукла." },
-      { who: "papa", text: "Я лучше куклы! Я болельщик «Спартака»! Пока кричу — беги. Как обернусь — замри!" },
+      { who: "zhs", text: "Пап... только не говори, что ты кукла. И откуда у всех зелёные костюмы? Почему я номер 456?!" },
+      { who: "papa", text: "Как в сериале! А я лучше куклы: я болельщик «Спартака»! Пока кричу — беги. Как обернусь — замри!" },
       { who: "le", text: "Я в деле! Марафонцы не сдаются." },
       { who: "na", text: "Ой, я на каблуках... Ну ладно!" }
     ]);
     await UI.rules("Красный свет, зелёный свет", [
-      { keys: ["→"], icons: [this.textures.get("zh_summer_side_0").getSourceImage()], text: "Держи → (или D) — Женя бежит. Отпусти — стоит." },
+      { keys: ["→"], icons: [this.kit.zh_summer_0], text: "Держи → (или D) — Женя бежит. Отпусти — стоит." },
       { icons: [this.papaBack], text: "Папа спиной кричит «МО-СКОВ-СКИЙ СПАР-…». В это время беги!" },
       { icons: [this.textures.get("pa_station_cheer").getSourceImage()], text: "На «ТАК!» папа оборачивается. Замри и не двигайся, пока он снова не отвернётся." },
       { text: "Двинулась, когда папа смотрит, — пара шагов назад. Добеги до красной линии!" }
@@ -71,13 +95,15 @@ class RedLightScene extends Phaser.Scene {
   async cycle() {
     if (this.state !== "play") return;
     this.light = "green"; this.syl = []; this.showChant();
+    this.npcs.forEach(n => { n.f = .75 + Math.random() * .35; });   // у каждой свой темп на этот круг
     const speed = .75 + Math.random() * .55 + Math.min(.4, this.round++ * .06), base = [0, 360, 720, 1200, 1560];
     const words = ["МО-", "СКОВ-", "СКИЙ\u00a0", "СПАР-", "ТАК!"];
     for (let i = 0; i < 5; i++) {
       await World.wait(this, i ? (base[i] - base[i - 1]) / speed : 250);
       if (this.state !== "play") return;
       this.syl.push(words[i]); Sound.sfx("syl", i); this.showChant();
-      if (i === 4) { this.light = "red"; this.graceT = 280; this.watchT = 1500 + Math.random() * 1200; }
+      if (i === 4) { this.light = "red"; this.graceT = 280; this.watchT = 1500 + Math.random() * 1200;
+        this.npcs.forEach(n => { n.twitch = Math.random() < .2 ? .4 + Math.random() * 1 : 0; }); }
     }
   }
   // кричалка — HTML-плашка сверху (в пиксельном шрифте холста нет буквы Й)
@@ -92,10 +118,17 @@ class RedLightScene extends Phaser.Scene {
     const dt = Math.min(.05, dtMs / 1000), K = this.keys, run = K.RIGHT.isDown || K.D.isDown;
     const z = this.zh;
     z.moving = run; if (run) { z.x = Math.min(this.FINISH + 10, z.x + 40 * dt); z.t += dtMs; z.stepT = (z.stepT || 0) + dtMs; if (z.stepT > 230) { z.stepT = 0; Sound.sfx("step"); } }
-    // соперницы: бегут на зелёный, на красный иногда не успевают остановиться
+    // соперницы: бегут чуть медленнее Жени (темп меняется каждый круг), на красный иногда не успевают замереть или дёргаются.
+    // До красной линии добегают и останавливаются за ней — с поля не убегают.
+    const LINE = this.FINISH + 8;
     this.npcs.forEach(n => {
-      if (this.light === "green") { n.react = .15 + Math.random() * .25; if (n.x < this.FINISH - 6) { n.x += n.sp * dt; n.t += dtMs; } }
-      else if (n.react > 0) { n.react -= dt; n.x += n.sp * dt; n.t += dtMs; if (n.react <= 0 && Math.random() < .35 && n.x < this.FINISH - 6 && !n.oops) this.catchNpc(n); }
+      if (n.done) return;
+      const step = () => { n.x = Math.min(LINE, n.x + n.sp * n.f * dt); n.t += dtMs; if (n.x >= LINE) this.npcDone(n); };
+      if (this.light === "green") { n.react = .1 + Math.random() * .3; step(); }
+      else if (this.light === "red") {
+        if (n.react > 0) { n.react -= dt; step(); if (n.react <= 0 && !n.oops && Math.random() < .3) this.catchNpc(n); }
+        else if (!n.oops && n.twitch > 0 && (n.twitch -= dt) <= 0) this.catchNpc(n);   // не выдержала и шевельнулась
+      }
     });
     if (this.light === "red") {
       this.graceT -= dtMs; this.watchT -= dtMs;
@@ -105,8 +138,15 @@ class RedLightScene extends Phaser.Scene {
     if (z.x >= this.FINISH) this.win();
   }
   catchNpc(n) {
-    n.oops = true; n.x = Math.max(this.START, n.x - 30); Sound.sfx("wrong");
-    UI.toast(n.name === "Лера" ? "Папа: Лера, я всё видел! Назад!" : "Папа: Нарина, каблуки не оправдание!", 1500);
+    if (n.done) return;
+    n.oops = true; n.x = Math.max(this.START, n.x - 30); Sound.sfx("wrong"); n.miss = (n.miss || 0) + 1;
+    const L = n.name === "Лера" ? ["Папа: Игрок 067, Лера! Я всё видел! Назад!", "Папа: Лера, это не марафон! Замри!", "Папа: Опять Лера! Защитник, стоять!"]
+      : ["Папа: Игрок 218, Нарина! Каблуки не оправдание!", "Папа: Нарина, назад! Я всё вижу!", "Папа: Нарина, Джан тебе не поможет!"];
+    UI.toast(L[(n.miss - 1) % 3], 1500);
+  }
+  npcDone(n) {
+    n.done = true; n.x = this.FINISH + 8;
+    UI.toast(`${n.name} добежала! Женя, теперь твоя очередь!`, 2000);
   }
   async caughtZh() {
     this.state = "caught"; this.caught++; Sound.sfx("wrong"); this.cameras.main.shake(200, .006); this.flashT = 400;
@@ -125,7 +165,7 @@ class RedLightScene extends Phaser.Scene {
       { who: "papa", text: "Зато весело! МО-СКОВ-СКИЙ..." },
       { who: "le", text: "...СПАР-ТАК! Ой. Я что, теперь тоже болею за «Спартак»?" }
     ]);
-    await UI.card("Красный свет, зелёный свет", "Игрок №24 — победитель ★", 2800);
+    await UI.card("Красный свет, зелёный свет", "Игрок №456 — победитель ★", 2800);
     this.cameras.main.fadeOut(900, 0, 0, 0);
     this.time.delayedCall(950, () => this.scene.start("credits"));
   }
@@ -139,8 +179,8 @@ class RedLightScene extends Phaser.Scene {
     g.save(); g.translate(296, 92); g.scale(2, 2); g.drawImage(papa, -8, 0); g.restore();
     if (facing) { const k = Math.floor(s * 6) % 2; R(g, 280, 84, 2, 2, k ? "#f04040" : "#ff8080"); R(g, 310, 84, 2, 2, k ? "#f04040" : "#ff8080"); }
     // соперницы и Женя (по глубине)
-    const list = [...this.npcs.map(n => ({ y: n.y, draw: () => { const f = n.t ? Math.floor(n.t / 130) % 2 : 0; g.drawImage(src(`${n.key}_side_${f}`), Math.round(n.x) - 8, n.y - 26); } })),
-      { y: this.G, draw: () => { const f = this.zh.moving ? Math.floor(this.zh.t / 120) % 2 : 0; g.drawImage(src(`zh_summer_side_${f}`), Math.round(this.zh.x) - 8, this.G - 26); } }];
+    const list = [...this.npcs.map(n => ({ y: n.y, draw: () => { const f = n.t && !n.done ? Math.floor(n.t / 130) % 2 : 0, im = this.kit[`${n.key}_${f}`]; g.drawImage(im, Math.round(n.x) - 8, n.y - im.height); this.num(g, n.num, n.x, n.y - im.height - 8, "#f4f0e8"); } })),
+      { y: this.G, draw: () => { const f = this.zh.moving ? Math.floor(this.zh.t / 120) % 2 : 0, im = this.kit[`zh_summer_${f}`]; g.drawImage(im, Math.round(this.zh.x) - 8, this.G - im.height); this.num(g, "456", this.zh.x, this.G - im.height - 8, "#ffe070"); } }];
     list.sort((a, b) => a.y - b.y).forEach(o => o.draw());
     if (this.flashT > 0) { this.flashT -= 16; g.save(); g.globalAlpha = .25; R(g, 0, 0, 320, 180, "#f04040"); g.restore(); }
     // полоска прогресса

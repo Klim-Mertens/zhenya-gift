@@ -172,3 +172,16 @@ body { display: grid; place-items: center; font-family: "Tiny5", monospace; colo
 #credits .cr-line.big { font-size: calc(12px * var(--z)); color: #ffe9b0; }
 #credits .cr-line b { color: #8aff8a; font-weight: 400; }
 #credits .cr-end { font-size: calc(16px * var(--z)); color: #ffe9b0; margin-top: calc(30px * var(--z)); text-shadow: calc(1px * var(--z)) calc(1px * var(--z)) 0 #c8402a; }
+
+/* подпись трека в воспоминании про кросс */
+#tracktag { position: absolute; left: calc(6px * var(--z)); top: calc(6px * var(--z)); z-index: 60; display: flex; align-items: center; gap: calc(4px * var(--z)); background: rgba(20, 14, 26, .82); border: calc(1px * var(--z)) solid #f2c23a; color: #f4ead8; padding: calc(3px * var(--z)) calc(5px * var(--z)); font-size: calc(5px * var(--z)); line-height: 1.3; animation: ttIn .5s ease-out; }
+#tracktag b { color: #ffe9b0; font-weight: 400; font-size: calc(6px * var(--z)); }
+#tracktag .tt-ico { width: calc(8px * var(--z)); height: calc(8px * var(--z)); background: #f2c23a; clip-path: polygon(30% 0, 100% 0, 100% 20%, 45% 25%, 45% 80%, 30% 100%, 0 90%, 0 70%, 30% 65%); }
+@keyframes ttIn { from { opacity: 0; transform: translateY(calc(-6px * var(--z))); } to { opacity: 1; transform: none; } }
+/* настоящее фото в конце воспоминания */
+#memphoto { position: absolute; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; background: rgba(20, 12, 8, 0); transition: background .4s; }
+#memphoto .mp { background: #fffaf0; padding: calc(4px * var(--z)) calc(4px * var(--z)) calc(10px * var(--z)); transform: rotate(-3deg) scale(.6); opacity: 0; transition: transform .4s ease-out, opacity .4s; box-shadow: 0 calc(3px * var(--z)) calc(8px * var(--z)) rgba(0,0,0,.5); }
+#memphoto img { display: block; height: calc(140px * var(--z)); width: auto; }
+#memphoto .mpc { color: #3a2a20; text-align: center; font-size: calc(6px * var(--z)); margin-top: calc(3px * var(--z)); }
+#memphoto.show { background: rgba(20, 12, 8, .6); }
+#memphoto.show .mp { transform: rotate(-3deg) scale(1); opacity: 1; }

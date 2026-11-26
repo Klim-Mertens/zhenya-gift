@@ -1,10 +1,10 @@
-/* Финальные титры: тёмный зал в духе «Игры в кальмара» (○ △ □, номер игрока 24 — день рождения Жени,
+/* Финальные титры: тёмный зал в духе «Игры в кальмара» (○ △ □, номер игрока 456 — как у главного героя сериала,
    золотая копилка-приз), снизу шагают все герои, по центру ползут титры. Музыка — трек "credits". */
 "use strict";
 class CreditsScene extends Phaser.Scene {
   constructor() { super("credits"); }
   create() {
-    Save.store("credits"); Sound.play("credits"); Sound.ambient(null); UI.reset();
+    Save.store("credits"); Sound.play("credits"); Sound.ambient(null); UI.reset(); Postcards.trackTag(true, "credits");
     this.cameras.main.fadeIn(1200, 0, 0, 0);
     this.t0 = this.time.now;
     const add = (k, cv) => { if (!this.textures.exists(k)) this.textures.addCanvas(k, cv); };
@@ -16,7 +16,7 @@ class CreditsScene extends Phaser.Scene {
     this.buildRoll();
     this.skipKey = e => { if (["Space", "Enter"].includes(e.code) && this.done) { e.preventDefault(); this.finish(); } };
     window.addEventListener("keydown", this.skipKey);
-    this.events.once("shutdown", () => { window.removeEventListener("keydown", this.skipKey); const el = document.getElementById("credits"); if (el) el.remove(); });
+    this.events.once("shutdown", () => { window.removeEventListener("keydown", this.skipKey); Postcards.trackTag(false); const el = document.getElementById("credits"); if (el) el.remove(); });
   }
   buildRoll() {
     const el = document.createElement("div"); el.id = "credits";
@@ -27,7 +27,7 @@ class CreditsScene extends Phaser.Scene {
       <div class="cr-title">Лето Жени</div>
       <div class="cr-sub">С днём рождения, Женя!</div>
       <div class="cr-h">В ролях</div>
-      ${row("zh_summer_front_0", "Главная героиня, игрок №24", "Женя")}
+      ${row("zh_summer_front_0", "Главная героиня, игрок №456", "Женя")}
       ${row("eg_front_0", "Брат, автор открыток", "Егор")}
       ${row("lo_front_0", "Лоренцо, водитель серпантина", "Лоренцо")}
       ${row("na_front_0", "Лучшая подруга и переводчица", "Нарина")}
@@ -44,7 +44,7 @@ class CreditsScene extends Phaser.Scene {
       <div class="cr-h">Идея, сюжет и любовь</div>
       <div class="cr-line big">Егор</div>
       <div class="cr-h">Финальная игра</div>
-      <div class="cr-line">Игрок №24 — Женя</div>
+      <div class="cr-line">Игрок №456 — Женя</div>
       <div class="cr-line">Статус: <b>ПОБЕДИТЕЛЬ</b></div>
       <div class="cr-line">Приз: вся наша любовь (копилка уже переполнена)</div>
       <div class="cr-end">С днём рождения! ★</div>

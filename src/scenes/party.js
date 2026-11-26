@@ -102,6 +102,11 @@ class PartyScene extends Phaser.Scene {
   updGoal() {
     const left = this.TASKS.filter(k => !this.talked[k]).length;
     UI.goal(left ? `Поздравления: подойди к гостям из списка (осталось ${left})` : "Все поздравили! Теперь задуй свечи на торте");
+    // все гости поздравили — напоминание про свечи: стрелка над тортом и подсказка, повторяется, пока свечи горят
+    if (!left && !this.st.arrow) {
+      this.st.arrow = true; const nag = () => { if (this.st.arrow && this.free && !UI.busy) { UI.toast("Все гости поздравили! Подойди к торту и задуй свечи", 3200); Sound.sfx("sparkle"); } };
+      this.time.delayedCall(600, nag); this.nag = this.time.addEvent({ delay: 15000, loop: true, callback: nag });
+    }
   }
   async intro() {
     Sound.sfx("door"); this.tweens.add({ targets: [this.zh.spr, this.lo.spr], alpha: 1, duration: 400 });
@@ -165,7 +170,7 @@ class PartyScene extends Phaser.Scene {
     await UI.say([{ who: "eg", text: "А если серьёзно... Я тебя очень люблю, Жень. С днём рождения!" }, { who: "zhs", text: "И я тебя, братишка. Это лучший подарок." }]);
   }
   async candles() {
-    this.free = false; this.zh.frozen = true; UI.goal(""); UI.hint("");
+    this.free = false; this.zh.frozen = true; UI.goal(""); UI.hint(""); this.st.arrow = false; if (this.nag) this.nag.remove();
     await UI.say([{ who: "eg", text: "Все сюда! Женя, загадывай желание!" }, { who: "lo", text: "Uno, due, tre..." }]);
     await World.wait(this, 600);
     Sound.sfx("blow"); this.st.candles = false; this.st.smoke = this.time.now; await World.wait(this, 700);
@@ -177,12 +182,7 @@ class PartyScene extends Phaser.Scene {
     Save.store("party");
     await UI.card("С днём рождения, Женя!", "Все, кто тебя любит, сегодня рядом ★", 3600);
     // финальная игра во дворе
-    await UI.say([
-      { who: "papa", text: "Так, а теперь — последняя игра! Все во двор!" },
-      { who: "eg", text: "Помнишь «Игру в кальмара», которую мы смотрели? Сейчас будет своя версия." },
-      { who: "zhs", text: "Только не говорите, что папа будет куклой..." },
-      { who: "papa", text: "Ещё как буду!" }
-    ]);
+    await UI.say([{ who: "papa", text: "А теперь — последняя игра! Все во двор!" }]);
     this.cameras.main.fadeOut(900, 0, 0, 0);
     this.time.delayedCall(950, () => this.scene.start("redlight"));
   }
@@ -203,6 +203,8 @@ class PartyScene extends Phaser.Scene {
     st.confetti.forEach(p => R(g, Math.round(p.x), Math.round(p.y), p.w, p.w === 2 ? 1 : 2, p.c));
     if (st.light < 1) { g.save(); g.globalAlpha = .88 * (1 - st.light); R(g, 0, 0, 320, 180, "#0a0812");
       g.globalAlpha = .35 * (1 - st.light); PK.ell(g, 178, 88, 26, 16, "#ffb060"); R(g, 169, 82, 18, 3, "#ffd84a"); g.restore(); }   // в темноте светятся только свечи
+    if (st.arrow && this.free) { const y = 74 + Math.round(Math.abs(Math.sin(t / 220)) * -4), c = "#ffd84a", o = "#3a2420";   // стрелка над тортом
+      R(g, 174, y - 9, 7, 7, o); R(g, 175, y - 8, 5, 6, c); for (let i = 0; i < 5; i++) { R(g, 172 + i, y - 2 + i, 11 - i * 2, 1, i === 4 ? o : c); R(g, 171 + i, y - 2 + i, 1, 1, o); R(g, 182 - i, y - 2 + i, 1, 1, o); } }
     if (st.flash && t - st.flash < 600) { g.save(); g.globalAlpha = 1 - (t - st.flash) / 600; R(g, 0, 0, 320, 180, "#ffffff"); g.restore(); }
   }
   draw(g, t) {

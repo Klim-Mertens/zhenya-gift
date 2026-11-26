@@ -23,12 +23,20 @@ window.Postcards = (() => {
     el.querySelector("canvas").getContext("2d").drawImage(EgorArt.item(c.item), 0, 0);
     el.querySelector(".pci").textContent = c.name; el.querySelector(".pct").textContent = c.text;
     el.hidden = false; Sound.sfx("sparkle");
-    if (id === "run") Sound.play("phonk");   // к открытке про кросс — свой фонк-трек
+    if (id === "run") { Sound.play("phonk"); trackTag(true); }   // к открытке про кросс — фонк-трек и подпись
     return new Promise(res => {
       const done = e => { if (e.type === "keydown" && !["Space", "Enter", "NumpadEnter"].includes(e.code)) return; e.preventDefault(); e.stopImmediatePropagation();
         window.removeEventListener("keydown", done, true); el.removeEventListener("pointerdown", done); el.hidden = true; Sound.sfx("select"); setTimeout(res, 80); };
       setTimeout(() => { window.addEventListener("keydown", done, true); el.addEventListener("pointerdown", done); }, 500);
     });
+  }
+  // подпись с названием трека (только когда есть настоящее переложение по нотам — в личной версии)
+  const TAGS = { phonk: ["Murder In My Mind", "Kordhell · 8-бит версия"], credits: ["In the End", "Linkin Park · 8-бит версия"] };
+  function trackTag(on, track = "phonk") {
+    let el = document.getElementById("tracktag");
+    if (!on || !(window.ZG_TRACKS && window.ZG_TRACKS[track])) { if (el) el.hidden = true; return; }
+    if (!el) { el = document.createElement("div"); el.id = "tracktag"; document.getElementById("ui").appendChild(el); }
+    el.innerHTML = `<span class="tt-ico"></span><span><b>${TAGS[track][0]}</b><br>${TAGS[track][1]}</span>`; el.hidden = false;
   }
   // воспоминание поверх текущей сцены: сцена на паузе, цель/список спрятаны, музыка потом возвращается
   async function recall(scene, id) {
@@ -70,14 +78,15 @@ window.Postcards = (() => {
     ["stand", "a", "b"].forEach((v, i) => { const legs = T.LEGS[v].map((r, y) => y >= 2 && y <= 3 ? r.replace(/J/g, "S") : r);
       scene.textures.addCanvas(`zh_sport_front_${i}`, PK.sprite(top.concat(legs), pal)); });
   }
-  return { find, recall, show, placeItem, cameo, sport, LIST, got, TOTAL };
+  return { find, recall, show, placeItem, cameo, sport, trackTag, LIST, got, TOTAL };
 })();
 
 class MemoryScene extends Phaser.Scene {
   constructor() { super("memory"); }
   init(data) { data = data || {}; this.mid = typeof MemoryScene.prototype[data.id] === "function" && !["create", "init", "end", "draw", "update"].includes(data.id) ? data.id : "series"; this.from = data.from; this.test = !!data.test || !data.from; }
   create() {
-    Sound.play(this.mid === "run" ? "phonk" : "memory"); Sound.ambient(null);
+    Sound.play(this.mid === "run" ? "phonk" : "memory"); Sound.ambient(null); Postcards.trackTag(this.mid === "run");
+    this.events.once("shutdown", () => { Postcards.trackTag(false); const ph = document.getElementById("memphoto"); if (ph) ph.remove(); });
     Postcards.sport(this);
     this.cameras.main.fadeIn(600, 255, 230, 190);
     this.t0 = this.time.now; this.state = {}; this.chars = [];
@@ -172,7 +181,24 @@ class MemoryScene extends Phaser.Scene {
     this.state.laugh = true; Sound.sfx("laugh"); await World.wait(this, 1600);
     await UI.say([{ who: "zh", text: "Ахаха! Ладно, половником даже удобнее..." }]);
     this.state.laugh = false;
+    await this.photo("dessert", "Тот самый половник. Это было на самом деле!");
     await this.end();
+  }
+  // настоящее фото от Клима (только в личной версии): несколько секунд, пробел — дальше
+  async photo(id, caption) {
+    const src = window.ZG_PHOTOS && window.ZG_PHOTOS[id]; if (!src) return;
+    const el = document.createElement("div"); el.id = "memphoto";
+    el.innerHTML = `<div class="mp"><img alt=""><div class="mpc"></div></div>`;
+    el.querySelector("img").src = src; el.querySelector(".mpc").textContent = caption;
+    document.getElementById("ui").appendChild(el); Sound.sfx("sparkle");
+    requestAnimationFrame(() => el.classList.add("show"));
+    await new Promise(res => {
+      let ok = false; const fin = () => { window.removeEventListener("keydown", key, true); clearTimeout(tm); res(); };
+      const key = e => { if (ok && ["Space", "Enter"].includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); fin(); } };
+      setTimeout(() => { ok = true; }, 1500); window.addEventListener("keydown", key, true);
+      const tm = setTimeout(fin, 5000);
+    });
+    el.classList.remove("show"); await World.wait(this, 400); el.remove();
   }
   // ---------- отрисовка ----------
   draw(g, t) {
