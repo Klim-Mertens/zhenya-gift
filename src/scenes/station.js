@@ -28,7 +28,7 @@ class StationScene extends Phaser.Scene {
     this.inter = World.interactions(this, this.zh, [
       { x: doorX - 21, y: 108, r: 26, label: "попрощаться с родителями", enabled: () => !this.said, use: () => this.farewell() },
       { x: doorX, y: 84, r: 16, label: "сесть в поезд", enabled: () => this.said, use: () => this.board() },
-      { x: 52, y: 110, r: 18, label: "посмотреть на скамейку", task: "посмотреть на скамейку", use: () => UI.say([{ who: "zhw", text: "Скамейка вся в снегу. Летом мы тут ели мороженое и ждали электричку." }]) },
+      { x: 52, y: 110, r: 18, label: "посмотреть на скамейку", task: "посмотреть на скамейку", use: () => UI.say([{ who: "zhw", text: "Надо посидеть на дорожку. Традиция!" }, { who: "mama", text: "Правильно, доченька. Присядем все на минутку... Ну всё, теперь точно доедешь хорошо." }]) },
       { x: 151, y: 136, r: 14, label: "посмотреть на часы", task: "взглянуть на часы", use: () => UI.say([{ who: "zhw", text: "18:40. Поезд по расписанию. Мама наверняка уже проверила." }]) }
     ]);
     this.time.delayedCall(700, () => UI.goal("Подойди к маме и папе"));

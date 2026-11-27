@@ -26,15 +26,26 @@ window.Closeups = (() => {
     { x: 58, y: 66, name: "ball_red" }, { x: 160, y: 56, name: "zk" }, { x: 262, y: 70, name: "rzd" },
     { x: 96, y: 136, name: "cosmo" }, { x: 214, y: 140, name: "tangerine" }, { x: 290, y: 150, name: "icicle" }
   ];
+  function gingerbread(g, x, y) {
+    const C = "#b8702e", D = "#8a4a1a", W = "#fff4e8";
+    PK.line(g, x, y - 34, x, y - 20, "#d8202c"); R(g, x - 3, y - 22, 7, 3, "#d8202c");             // ленточка с бантиком
+    PK.ell(g, x, y - 12, 10, 10, OL); PK.ell(g, x, y - 12, 9, 9, C);                              // голова
+    R(g, x - 9, y - 2, 18, 22, OL); R(g, x - 8, y - 2, 16, 21, C);                                // туловище
+    R(g, x - 20, y, 12, 8, OL); R(g, x - 19, y + 1, 11, 6, C); R(g, x + 8, y, 12, 8, OL); R(g, x + 8, y + 1, 11, 6, C);   // руки
+    R(g, x - 9, y + 18, 8, 14, OL); R(g, x - 8, y + 18, 6, 13, C); R(g, x + 1, y + 18, 8, 14, OL); R(g, x + 2, y + 18, 6, 13, C);   // ноги
+    R(g, x - 4, y - 15, 2, 2, OL); R(g, x + 3, y - 15, 2, 2, OL); for (let k = -3; k <= 3; k++) P(g, x + k, y - 8 + (Math.abs(k) < 3 ? 1 : 0), W);   // глаза, улыбка глазурью
+    [y + 3, y + 8, y + 13].forEach(yy => { R(g, x - 1, yy, 3, 3, "#e83a4a"); P(g, x, yy, "#ffb0b8"); });                // пуговки-драже
+    for (let k = 0; k < 4; k++) { P(g, x - 18 + k, y + 2 + (k % 2) * 3, W); P(g, x + 15 + k, y + 2 + (k % 2) * 3, W); P(g, x - 7 + (k % 2) * 3, y + 27 + k, W); P(g, x + 3 + (k % 2) * 3, y + 27 + k, W); }   // глазурь зигзагом
+    P(g, x - 5, y - 10, D); P(g, x + 6, y - 10, D);
+  }
   function treeDraw(bg) {
     return (g, t) => {
       const s = t / 1000; g.drawImage(bg, 0, 0);
       const sw = k => Math.round(Math.sin(s * 1.3 + k) * 1.5);
       // красный шар с отражением гирлянды
       ball(g, 52 + sw(0), 52, 18, "#d8202c", (g, x, y) => { for (let k = 0; k < 5; k++) P(g, x - 8 + k * 4, y + 6 + Math.round(Math.sin(k) * 2), ["#f2d23a", "#4ab0ff", "#6ae06a", "#ff4a5a", "#ffffff"][(k + Math.floor(s * 2)) % 5]); });
-      // шарик, который Женя с братом расписали в детстве: «Ж+К»
-      ball(g, 160 + sw(1), 50, 21, "#3a6ac8", (g, x, y) => { FONT(g, "Ж", x - 13, y - 5, "#ffffff", 2); R(g, x - 1, y, 5, 1, "#f2d23a"); R(g, x + 1, y - 2, 1, 5, "#f2d23a"); FONT(g, "К", x + 6, y - 5, "#ffffff", 2);
-        for (let k = 0; k < 6; k++) P(g, x - 12 + k * 5, y + 10, "#f2d23a"); });
+      // имбирный пряник-человечек на красной ленточке
+      gingerbread(g, 160 + sw(1), 50);
       // игрушечный поезд РЖД
       const tx = 266 + sw(2), ty = 56; PK.line(g, tx, ty - 26, tx, ty - 10, "#d8d0c0");
       R(g, tx - 18, ty - 10, 36, 16, "#d4d8dc"); R(g, tx - 18, ty - 1, 36, 3, "#d8202c"); for (let k = 0; k < 4; k++) { R(g, tx - 15 + k * 8, ty - 7, 5, 5, "#f2c87a"); } RK.box(g, tx - 18, ty - 10, 36, 16, OL);
@@ -166,13 +177,15 @@ window.Closeups = (() => {
       PK.line(g, a.x + 62, a.y + 56, a.x + 56, a.y + (Math.floor(s * 4) % 2 ? 62 : 66), "#8a5a32");          // палка стучит
       R(g, a.x + 4, a.y + 64, 6, 10, "#b79ae8"); PK.ell(g, a.x + 7, a.y + 61, 3, 3, "#f4cca8"); R(g, a.x + 14, a.y + 66, 5, 8, "#f2e8d2"); PK.ell(g, a.x + 16, a.y + 63, 3, 3, "#d39a52"); R(g, a.x + 22, a.y + 66, 5, 8, "#5a2a3a"); PK.ell(g, a.x + 24, a.y + 63, 3, 3, "#3a2a24");
       if (Math.floor(s * 2) % 2) { FONT(g, "О", a.x + 66, a.y + 40, "#f2d23a"); }
-      // 2) детство: десерт из яблок и огромный половник
+      // 2) мама на работе: форма РЖД, рядом поезд
       const b = { x: 132, y: 26, w: 60, h: 70 }; frame(g, b.x, b.y, b.w, b.h, "#e8e0d0");
-      R(g, b.x, b.y, b.w, b.h, "#f4e4c4"); R(g, b.x, b.y + 46, b.w, 24, "#c8a070");
-      PK.ell(g, b.x + 20, b.y + 50, 10, 4, "#ffffff"); PK.ell(g, b.x + 20, b.y + 48, 7, 3, "#e8b040"); P(g, b.x + 18, b.y + 47, "#c8302a");
-      PK.line(g, b.x + 34, b.y + 56, b.x + 44, b.y + 18, "#a8b0b8"); PK.ell(g, b.x + 46, b.y + 14, 9, 7, "#a8b0b8"); PK.ell(g, b.x + 46, b.y + 13, 6, 4, "#d8dee2");   // половник!
-      R(g, b.x + 6, b.y + 26, 8, 14, "#f2e8d2"); PK.ell(g, b.x + 10, b.y + 22, 4, 4, "#f6caa4"); R(g, b.x + 6, b.y + 18, 8, 4, "#d39a52"); P(g, b.x + 9, b.y + 22, OL); P(g, b.x + 11, b.y + 22, OL);
-      R(g, b.x + 48, b.y + 34, 7, 12, "#3a5a8a"); PK.ell(g, b.x + 51, b.y + 31, 3, 3, "#f0c8a8"); R(g, b.x + 48, b.y + 27, 7, 2, "#3a2a24");
+      R(g, b.x, b.y, b.w, b.h, "#cfe0ee"); R(g, b.x, b.y + 52, b.w, 18, "#9a9aa4"); R(g, b.x, b.y + 52, b.w, 1, "#6a6a74");   // небо и перрон
+      R(g, b.x + 24, b.y + 18, 36, 30, "#d4d8dc"); R(g, b.x + 24, b.y + 36, 36, 4, "#d8202c"); for (let k = 0; k < 3; k++) R(g, b.x + 28 + k * 10, b.y + 23, 7, 7, "#7aa8c8");   // вагон
+      R(g, b.x + 24, b.y + 48, 36, 4, "#3a3a44"); PK.ell(g, b.x + 32, b.y + 50, 3, 3, "#2a2a30"); PK.ell(g, b.x + 52, b.y + 50, 3, 3, "#2a2a30");
+      R(g, b.x + 10, b.y + 30, 10, 18, "#2a3a6a"); R(g, b.x + 14, b.y + 30, 2, 8, "#d8202c");                // мама в синей форме с красным галстуком
+      PK.ell(g, b.x + 15, b.y + 25, 4, 4, "#f4cca8"); R(g, b.x + 10, b.y + 19, 10, 3, "#2a3a6a"); R(g, b.x + 9, b.y + 21, 12, 1, "#1a2448");   // голова, пилотка
+      R(g, b.x + 11, b.y + 22, 2, 5, "#e4c890"); R(g, b.x + 17, b.y + 22, 2, 5, "#e4c890"); P(g, b.x + 14, b.y + 25, OL); P(g, b.x + 16, b.y + 25, OL); P(g, b.x + 15, b.y + 27, "#c45a52");
+      R(g, b.x + 11, b.y + 48, 3, 6, "#1a1a22"); R(g, b.x + 16, b.y + 48, 3, 6, "#1a1a22"); FONT(g, "РЖД", b.x + 28, b.y + 41, "#ffffff");
       // 3) медаль за кросс по Коврову
       const m = { x: 222, y: 44 }; PK.line(g, m.x + 14, m.y - 18, m.x + 6, m.y, "#3a5ab0"); PK.line(g, m.x + 16, m.y - 18, m.x + 24, m.y, "#d8202c");
       R(g, m.x + 10, m.y - 20, 10, 3, "#3a3a48");

@@ -23,7 +23,8 @@ window.Postcards = (() => {
     el.querySelector("canvas").getContext("2d").drawImage(EgorArt.item(c.item), 0, 0);
     el.querySelector(".pci").textContent = c.name; el.querySelector(".pct").textContent = c.text;
     el.hidden = false; Sound.sfx("sparkle");
-    if (id === "run") { Sound.play("phonk"); trackTag(true); }   // к открытке про кросс — фонк-трек и подпись
+    if (id === "run") { Sound.play("phonk"); trackTag(true); }
+    // к открытке про кросс — фонк-трек и подпись
     return new Promise(res => {
       const done = e => { if (e.type === "keydown" && !["Space", "Enter", "NumpadEnter"].includes(e.code)) return; e.preventDefault(); e.stopImmediatePropagation();
         window.removeEventListener("keydown", done, true); el.removeEventListener("pointerdown", done); el.hidden = true; Sound.sfx("select"); setTimeout(res, 80); };
@@ -161,13 +162,13 @@ class MemoryScene extends Phaser.Scene {
   async traffic() {
     this.state.loud = 0;
     await UI.say([{ who: "", text: "Владимир, пробка. Машины стоят, все скучают." }, { who: "papa", text: "Так, что-то мы приуныли. Сейчас исправим!" }]);
-    this.state.loud = this.time.now; Sound.play("sprint", true);
+    this.state.loud = this.time.now; Sound.play("trap", true);   // папин трэп-бит на полную
     await UI.say([{ who: "", text: "Папа выкручивает громкость на максимум. Машина качается в такт!" },
       { who: "zh", text: "Па-а-ап! Нас слышно на всю улицу!" }, { who: "eg", text: "Смотри, в соседней машине тоже танцуют!" },
       { who: "papa", text: "Пробка — не повод скучать! Громче!" }]);
     this.state.laugh = true; Sound.sfx("laugh"); await World.wait(this, 1500);
     await UI.say([{ who: "zh", text: "Ахаха! Лучшая пробка в моей жизни." }]);
-    this.state.laugh = false; this.state.loud = 0; Sound.play("memory", true);
+    this.state.laugh = false;
     await this.end();
   }
   // ---------- 5. яблочный десерт и половник ----------

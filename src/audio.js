@@ -125,6 +125,17 @@ window.Sound = (() => {
             ["E5", 1.5], ["D5", .5], ["F#5", 1], ["-", 1]],
       bass: oompa(["Em", "C", "G", "D", "Em", "C", "G", "D"]) },
     // Открытка про кросс: свой мрачный фонк-мотив в духе «Murder In My Mind» (не ноты оригинала): «ковбелл» и тяжёлый бас
+    // свой трэп-бит для воспоминания про пробку (в духе русского рэпа: 808-бас, хэт-дроби, хлопок на 3-ю долю), фа минор, 140 bpm
+    trap: (() => {
+      const r1 = [["F5", .5], ["G#5", .5], ["C6", .5], ["G#5", .5], ["G5", .5], ["D#5", .5], ["F5", 1]];
+      const r2 = [["F5", .5], ["G#5", .5], ["C6", .5], ["C#6", .5], ["C6", .5], ["G#5", .5], ["G5", 1]];
+      const r4 = [["D#5", .5], ["F5", .5], ["G5", .5], ["G#5", .5], ["G5", 1], ["-", 1]];
+      const r8 = [["G#5", .5], ["G5", .5], ["F5", .5], ["D#5", .5], ["F5", 2]];
+      const b = (n, m) => [[n, 1.5], [n, 1], [m, 1.5]];
+      return { bpm: 140, lead: "square", trap: true, pluck: true,
+        mel: [].concat([["-", 8]], r1, r2, r1, r4, r1, r2, r1, r8, [["-", 8]]),
+        bass: [].concat(b("F1", "F1"), b("C#2", "C#2"), b("D#2", "D#2"), b("F1", "C2"), b("F1", "F1"), b("C#2", "C#2"), b("D#2", "D#2"), b("F1", "C2"), b("F1", "F1"), b("C#2", "C#2"), b("D#2", "D#2"), b("F1", "C2")) };
+    })(),
     phonk: { bpm: 130, lead: "square", bell: true, drums: true, fast: true,
       mel: [["E5", .5], ["E5", .25], ["G5", .25], ["E5", .5], ["B4", .5], ["D5", .5], ["E5", .25], ["D5", .25], ["B4", 1],
             ["E5", .5], ["E5", .25], ["G5", .25], ["A5", .5], ["G5", .5], ["F#5", .5], ["E5", .25], ["D5", .25], ["E5", 1],
@@ -182,6 +193,10 @@ window.Sound = (() => {
             tone(f, tt, Math.min(len, .16), { type: "square", vol: .07, bus: musicBus, release: .14 });
             tone(f * 1.5, tt, Math.min(len, .12), { type: "square", vol: .045, bus: musicBus, release: .1 });
             tone(f * 2, tt, .04, { type: "triangle", vol: .05, bus: musicBus, release: .05 });
+          } else if (T.pluck) {                                   // трэп-плак: два квадрата с короткой атакой и хвостом
+            tone(f, tt, Math.min(len, .12), { type: "square", vol: .06, bus: musicBus, release: .22 });
+            tone(f * 2, tt, .05, { type: "triangle", vol: .06, bus: musicBus, release: .15 });
+            tone(f * 1.004, tt + .19, Math.min(len, .08), { type: "square", vol: .02, bus: musicBus, release: .18 });   // эхо
           } else if (T.piano) {                                   // «пиксельное фортепиано»: протяжная нота с мягким хвостом, октава сверху и эхо
             const body = Math.max(.2, len * .85), tail = Math.min(1.8, .5 + len * .5);
             tone(f, tt, body, { type: "triangle", vol: .15, bus: musicBus, attack: .01, release: tail });
@@ -192,7 +207,9 @@ window.Sound = (() => {
           if (T.bell) tone(f * 2, tt, .25, { type: "sine", vol: .05, bus: musicBus, release: .35 }); });
         if (T.tamb) for (let k = 0; k < 2; k++) { const tt = start + (a + k * .5) * beat; noise(tt, .05, { vol: k ? .03 : .06, bus: musicBus, hp: 6500 }); noise(tt + .02, .04, { vol: .02, bus: musicBus, hp: 8000 }); }
         at(bas, a, b, (tt, n, d) => { const f = NOTE(n); if (!f) return;
-          if (T.phonk) { tone(f, tt, d * beat * .95, { type: "sine", vol: .42, bus: musicBus, release: .15 }); tone(f * 2, tt, d * beat * .9, { type: "triangle", vol: .12, bus: musicBus, release: .12 }); tone(f * 3, tt, .05, { type: "square", vol: .05, bus: musicBus }); }  // 808
+          if (T.trap) { const L = d * beat; tone(f, tt, L * .95, { type: "sine", vol: .5, bus: musicBus, release: .12, slide: L > .9 ? .88 : 0 });
+            tone(f * 2, tt, L * .9, { type: "triangle", vol: .1, bus: musicBus, release: .1 }); tone(f * 4, tt, .03, { type: "square", vol: .04, bus: musicBus, release: .03 }); }
+          else if (T.phonk) { tone(f, tt, d * beat * .95, { type: "sine", vol: .42, bus: musicBus, release: .15 }); tone(f * 2, tt, d * beat * .9, { type: "triangle", vol: .12, bus: musicBus, release: .12 }); tone(f * 3, tt, .05, { type: "square", vol: .05, bus: musicBus }); }  // 808
           else if (T.piano) { const L = d * beat; tone(f, tt, L * .8, { type: "triangle", vol: .15, bus: musicBus, attack: .01, release: Math.min(1.6, .3 + L * .4) });
             tone(f / 2, tt, L * .8, { type: "sine", vol: .1, bus: musicBus, attack: .02, release: Math.min(1.6, .3 + L * .4) }); }
           else tone(f, tt, d * beat * .85, { type: "triangle", vol: .14, bus: musicBus, release: .1 }); });
@@ -205,6 +222,15 @@ window.Sound = (() => {
           if (pos === 1 || pos === 3) { noise(tt, .12, { vol: .2, bus: musicBus, hp: 1100 }); noise(tt + .015, .09, { vol: .12, bus: musicBus, hp: 2200 }); }
           const roll = bar % 4 === 3 && pos === 3;
           for (let k = 0; k < (roll ? 8 : 4); k++) noise(tt + k * beat / (roll ? 8 : 4), .02, { vol: k % 2 ? .03 : .055, bus: musicBus, hp: 8000 });
+        }
+        if (T.trap) {                                             // трэп: бочка по рисунку, хлопок на 3-ю долю, хэт восьмыми с дробями
+          const tt = start + a * beat, pos = a % 4, bar = Math.floor(a / 4), q = beat / 4;
+          const kicks = bar % 2 ? [[0, 0], [1, 2], [2, 2], [2, 3]] : [[0, 0], [0, 3], [2, 2]];
+          kicks.forEach(([bt, st]) => { if (bt === pos) tone(58, tt + st * q, .32, { type: "sine", vol: .42, bus: musicBus, slide: .45 }); });
+          if (pos === 2) { noise(tt, .16, { vol: .24, bus: musicBus, hp: 1200 }); noise(tt + .012, .12, { vol: .14, bus: musicBus, hp: 2600 }); noise(tt + .025, .1, { vol: .1, bus: musicBus, hp: 1800 }); }
+          const roll = (bar % 2 === 1 && pos === 3) ? 6 : (bar % 4 === 3 && pos === 1) ? 4 : 2;   // дроби: триоли/шестнадцатые
+          for (let k = 0; k < roll; k++) noise(tt + k * beat / roll, .025, { vol: k % 2 ? .035 : .06, bus: musicBus, hp: 8500 });
+          if (bar % 4 === 0 && pos === 0) noise(tt, .5, { vol: .05, bus: musicBus, hp: 5000 });   // тарелка в начале фразы
         }
         if (T.drums) {                                            // бочка на сильные доли, хэт на слабые
           const kick = start + a * beat; if (a % 2 === 0) tone(90, kick, .12, { type: "sine", vol: .3, bus: musicBus, slide: .4 }); else noise(kick, .08, { vol: .12, bus: musicBus, hp: 1500 });

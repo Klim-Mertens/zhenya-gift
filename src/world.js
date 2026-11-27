@@ -91,9 +91,11 @@ window.World = (() => {
     el.classList.toggle("dim", sx < w && sy < hh);
   }
   function interactions(scene, playerObj, list) {
-    let current = null;
-    const tasks = list.filter(it => it.task);
-    tasks.forEach(it => { const use = it.use; it.use = (...a) => { if (!it.taskDone) { it.taskDone = true; Sound.sfx("sparkle"); taskPanel(tasks, true); if (it.mark) { it.mark.destroy(); it.mark = null; } } return use(...a); };
+    let current = null, lastUse = scene.time.now;
+    const tasks = list.filter(it => it.task), skey = scene.scene.key, seen = Save.tasksDone(skey);
+    list.forEach(it => { const use = it.use; it.use = (...a) => { lastUse = scene.time.now; return use(...a); }; });
+    tasks.forEach(it => { const use = it.use; it.use = (...a) => { if (!it.taskDone) { it.taskDone = true; Save.taskDone(skey, it.task); Sound.sfx("sparkle"); taskPanel(tasks, true); if (it.mark) { it.mark.destroy(); it.mark = null; } } return use(...a); };
+      if (seen.includes(it.task)) { it.taskDone = true; return; }   // уже осмотрено раньше (например, до мини-игры)
       it.mark = scene.add.image(it.x, it.y - (it.markDy || 22), sparkTex(scene)).setDepth(5000);
       scene.tweens.add({ targets: it.mark, y: it.mark.y - 3, alpha: .45, duration: 600, yoyo: true, repeat: -1, ease: "Sine.easeInOut" }); });
     taskPanel(tasks, true);
@@ -105,7 +107,10 @@ window.World = (() => {
       update() {
         tasks.forEach(it => { if (it.mark) it.mark.setVisible(!it.enabled || it.enabled()); });
         if (tasks.length) taskDim(scene, playerObj);
-        if (UI.busy || playerObj.frozen) { if (current) { current = null; UI.hint(""); } return; }
+        if (UI.busy || playerObj.frozen) { lastUse = Math.max(lastUse, scene.time.now - 10000); if (current) { current = null; UI.hint(""); } return; }
+        // долго ничего не происходит — мягкая подсказка, что делать дальше
+        if (scene.time.now - lastUse > 35000) { lastUse = scene.time.now; const g = document.getElementById("goal"), goal = g && !g.hidden ? g.textContent.replace(/^[★\s]+/, "") : "";
+          UI.toast(goal ? `Подсказка: ${goal}. Подойди к нужному месту, и над Женей появится «Пробел — …»` : "Подсказка: подходи к людям и мигающим ★, над героиней появится «Пробел — …»", 5000); }
         const px = playerObj.spr.x, py = playerObj.spr.y;
         let best = null, bd = 1e9;
         list.forEach(it => { if (it.enabled && !it.enabled()) return; const d = Math.hypot(px - it.x, py - it.y); if (d < (it.r || 20) && d < bd) { bd = d; best = it; } });

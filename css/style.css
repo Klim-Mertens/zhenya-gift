@@ -185,3 +185,15 @@ body { display: grid; place-items: center; font-family: "Tiny5", monospace; colo
 #memphoto .mpc { color: #3a2a20; text-align: center; font-size: calc(6px * var(--z)); margin-top: calc(3px * var(--z)); }
 #memphoto.show { background: rgba(20, 12, 8, .6); }
 #memphoto.show .mp { transform: rotate(-3deg) scale(1); opacity: 1; }
+
+/* выбор главы (пауза и титул) */
+#pchap, #tchap { margin-top: calc(4px * var(--z)); display: grid; gap: calc(2px * var(--z)); }
+#pchap .pch, #tchap .pch { margin: 0; font: inherit; font-size: calc(6px * var(--z)); text-align: left; cursor: pointer; color: #fff4dc; background: #3a2840; border: calc(1px * var(--z)) solid #a88a5a; padding: calc(1px * var(--z)) calc(4px * var(--z)); }
+#pchap .pch:hover, #pchap .pch:focus-visible, #tchap .pch:hover, #tchap .pch:focus-visible { background: #c8402a; outline: none; }
+#pchap .pch[disabled], #tchap .pch[disabled] { opacity: .45; cursor: default; }
+#tchap { width: calc(150px * var(--z)); margin: calc(4px * var(--z)) auto 0; pointer-events: auto; }
+#tchap .psub { font-size: calc(6px * var(--z)); color: #f2c46a; }
+#pause .pbox.chapmode .pcols { display: none; }
+#title.chap .menu, #title.chap .keys, #title.chap .sub { display: none; }
+#pchap .pback, #tchap .pback { margin-top: calc(3px * var(--z)); text-align: center; color: #f2c46a; }
+#pchap .pch[disabled]:hover, #tchap .pch[disabled]:hover { background: #3a2840; }
